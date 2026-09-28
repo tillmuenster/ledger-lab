@@ -1,0 +1,1463 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ledger Lab</title>
+<meta name="author" content="Till Muenster, University of Mannheim">
+<style>
+:root {
+  --bg: #f6f5f1; --card: #ffffff; --ink: #1d232b; --muted: #5d6673; --line: #dcd9d0;
+  --accent: #1f4e79; --accent-ink: #ffffff; --ok: #1d6b3a; --ok-bg: #e5f3e9;
+  --bad: #9b2226; --bad-bg: #fbe9e7; --warn: #7a5200; --warn-bg: #fdf3dc; --field: #ffffff;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #14171b; --card: #1d2127; --ink: #e6e8eb; --muted: #9aa3ad; --line: #333a43;
+    --accent: #6fa8dc; --accent-ink: #0d1117; --ok: #7ccf97; --ok-bg: #16301f;
+    --bad: #f08a80; --bad-bg: #3a1c1b; --warn: #f0c060; --warn-bg: #3a2e12; --field: #14171b;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink);
+  font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+.wrap { max-width: 860px; margin: 0 auto; padding: 24px 16px 64px; }
+header h1 { font-size: 1.6rem; margin: 0 0 4px; }
+header p { margin: 0; color: var(--muted); }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 20px; margin-top: 18px; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.toolbar label { color: var(--muted); font-size: .9rem; }
+.field { display: flex; align-items: center; gap: 10px; flex: 1 1 100%; min-width: 0; }
+.field label { width: 96px; flex: none; }
+#topic, #level { flex: 1 1 auto; min-width: 0; max-width: 100%; }
+select, input { font: inherit; color: var(--ink); background: var(--field); border: 1px solid var(--line);
+  border-radius: 6px; padding: 7px 9px; }
+select:focus, input:focus, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+button { font: inherit; border-radius: 6px; padding: 8px 14px; cursor: pointer; border: 1px solid var(--line);
+  background: var(--card); color: var(--ink); }
+button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+button.link { border: none; background: none; color: var(--accent); padding: 4px 6px; }
+button:disabled { opacity: .5; cursor: default; }
+.stats { margin-left: auto; color: var(--muted); font-size: .9rem; }
+.task-meta { font-size: .8rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 6px; }
+.task-text { font-size: 1.08rem; }
+.task-text table { border-collapse: collapse; margin: 10px 0 4px; }
+.task-text td { padding: 3px 14px 3px 0; }
+.task-text td.num { text-align: right; font-variant-numeric: tabular-nums; }
+table.entry { width: 100%; border-collapse: collapse; margin-top: 14px; }
+table.entry th { text-align: left; font-size: .85rem; color: var(--muted); font-weight: 600; padding: 4px 6px; border-bottom: 1px solid var(--line); }
+table.entry td { padding: 6px; vertical-align: middle; }
+table.entry select { width: 100%; }
+table.entry input { width: 100%; text-align: right; font-variant-numeric: tabular-nums; }
+.col-amt { width: 22%; } .col-x { width: 44px; }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+.below-entry { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 4px; flex-wrap: wrap; }
+#btn-noentry { font-size: .9rem; padding: 6px 12px; }
+table.entry input::placeholder { color: var(--muted); opacity: .45; }
+.feedback { margin-top: 16px; border-radius: 8px; padding: 12px 16px; display: none; }
+.feedback.show { display: block; }
+.feedback.ok { background: var(--ok-bg); color: var(--ok); }
+.feedback.bad { background: var(--bad-bg); color: var(--bad); }
+.feedback.info { background: var(--warn-bg); color: var(--warn); }
+.feedback h3 { margin: 0 0 6px; font-size: 1rem; }
+.feedback ul { margin: 0; padding-left: 20px; }
+.feedback li { margin: 3px 0; }
+.solution { margin-top: 16px; display: none; border-top: 1px solid var(--line); padding-top: 14px; }
+.solution.show { display: block; }
+.solution h3 { margin: 0 0 8px; font-size: 1rem; }
+.je { font-variant-numeric: tabular-nums; border-collapse: collapse; }
+.je td { padding: 2px 10px 2px 0; }
+.je td.cr { padding-left: 32px; }
+.je td.num { text-align: right; min-width: 90px; }
+.explain { margin-top: 10px; color: var(--ink); }
+details { margin-top: 18px; }
+details summary { cursor: pointer; color: var(--accent); }
+.rules { font-size: .92rem; color: var(--muted); }
+.rules p { margin: 10px 0; }
+.tacct { display: grid; grid-template-columns: 1fr 1fr; margin: 12px 0 6px; }
+.t-head { font-weight: 700; color: var(--ink); text-align: center; padding: 6px 8px; border-bottom: 2px solid var(--ink); }
+.t-head span { font-weight: 400; color: var(--muted); }
+.t-head:first-child, .t-side:nth-child(odd) { border-right: 2px solid var(--ink); }
+.t-side { padding: 10px; display: flex; flex-wrap: wrap; gap: 6px; align-content: flex-start; }
+.t-contra { border-top: 1px dashed var(--line); }
+.t-label { width: 100%; font-size: .78rem; text-transform: uppercase; letter-spacing: .05em; }
+.chip { display: inline-block; padding: 3px 10px; border-radius: 8px; background: var(--bg); border: 1px solid var(--line); color: var(--ink); }
+.chip.contra { font-style: italic; }
+.t-conv { margin: 6px 0 0; padding-left: 18px; }
+.t-conv li { margin: 3px 0; }
+footer { margin-top: 28px; font-size: .8rem; color: var(--muted); }
+footer p { margin: 0 0 4px; }
+footer a { color: var(--accent); }
+header .byline { font-size: .9rem; margin-top: 2px; }
+@media (max-width: 560px) {
+  .field { flex-wrap: wrap; gap: 4px; }
+  .field label { width: 100%; }
+  #topic, #level { width: 100%; }
+  table.entry thead { display: none; }
+  table.entry tr { display: grid; grid-template-columns: 1fr 1fr 44px; gap: 6px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+  table.entry td { padding: 0; }
+  table.entry td:first-child { grid-column: 1 / -1; }
+  table.entry input::placeholder { color: var(--muted); opacity: .45; }
+  .stats { margin-left: 0; width: 100%; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Ledger Lab</h1>
+    <p>ACC 300 · Introduction to Financial Accounting</p>
+    <p class="byline">Developed by Till Muenster, University of Mannheim</p>
+  </header>
+
+  <div class="card">
+    <div class="toolbar">
+      <div class="field"><label for="level">Topics up to</label><select id="level"></select></div>
+      <div class="field"><label for="topic">Topic</label><select id="topic"></select></div>
+      <button class="primary" id="btn-new">New task</button>
+      <span class="stats" id="stats"></span>
+    </div>
+  </div>
+
+  <div class="card" id="task-card">
+    <div class="task-meta" id="task-meta"></div>
+    <div class="task-text" id="task-text"></div>
+
+    <table class="entry" aria-label="Journal entry">
+      <thead><tr><th>Account</th><th class="col-amt">Debit (€)</th><th class="col-amt">Credit (€)</th><th class="col-x"></th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <div class="below-entry">
+      <button class="link" id="btn-add">+ Add line</button>
+      <button id="btn-noentry">No entry required</button>
+    </div>
+
+    <div class="actions">
+      <button class="primary" id="btn-check">Check</button>
+      <button id="btn-hint">Hint</button>
+      <button id="btn-solution">Show solution</button>
+    </div>
+
+    <div class="feedback" id="feedback" role="status" aria-live="polite"></div>
+    <div class="solution" id="solution"></div>
+  </div>
+
+  <details class="card">
+    <summary>Debit and credit rules</summary>
+    <div class="rules">
+      <p class="t-intro">An account <b>increases</b> on the side shown below and <b>decreases</b> on the opposite side.</p>
+      <div class="tacct">
+        <div class="t-head">Debit <span>(left)</span></div>
+        <div class="t-head">Credit <span>(right)</span></div>
+        <div class="t-side">
+          <span class="chip">Assets</span><span class="chip">Expenses</span><span class="chip lvl3">Losses</span>
+        </div>
+        <div class="t-side">
+          <span class="chip">Liabilities</span><span class="chip">Shareholders' equity</span><span class="chip">Revenues</span><span class="chip lvl3">Gains</span>
+        </div>
+        <div class="t-side t-contra lvl2">
+          <div class="t-label">Contra accounts</div>
+          <span class="chip contra">Sales Returns</span><span class="chip contra lvl4">Discount on Bonds Payable</span><span class="chip contra lvl4">Treasury Stock</span>
+        </div>
+        <div class="t-side t-contra lvl2">
+          <div class="t-label">Contra accounts</div>
+          <span class="chip contra">Allowance for Doubtful Accounts</span><span class="chip contra">Allowance for Sales Returns</span><span class="chip contra">Deferred Gross Profit</span><span class="chip contra lvl3">Accumulated Depreciation</span>
+        </div>
+      </div>
+      <p class="lvl2 t-note">Contra accounts reduce another account, so they behave the opposite way to it.</p>
+      <ul class="t-conv">
+        <li><b>Accounts Payable</b>: amounts still owed to suppliers or employees. Where a specific liability account exists (e.g. Warranty Liability, Dividends Payable), use that account instead.</li>
+        <li><b>Accounts Receivable</b>: amounts owed to the company by customers and others.</li>
+        <li><b>Interest Payable / Interest Receivable</b>: interest owed or earned but not yet paid. Accounts Payable / Accounts Receivable are also accepted for interest.</li>
+        <li><b>Loans Payable</b>: bank loans. <b>Cash</b> includes bank accounts.</li>
+      </ul>
+    </div>
+  </details>
+
+  <footer><p class="copy">© 2026 Till Muenster</p><p>All tasks are generated randomly; companies and amounts are fictitious. Nothing you enter is stored or sent anywhere.</p><p>Ledger Lab is a practice aid. Despite careful checking, errors cannot be ruled out. In case of doubt, the lecture materials apply. If you believe you have found an error in a task, please e-mail Till Muenster at <a href="mailto:till.muenster@uni-mannheim.de?subject=Ledger%20Lab%3A%20possible%20error">till.muenster@uni-mannheim.de</a> and attach a screenshot of the task.</p></footer>
+</div>
+
+<script>
+/* =====================================================================
+   1. COURSE CONFIGURATION — accounts
+   ===================================================================== */
+const ACCOUNTS = [
+  // Assets (level = first level in which the account appears in the dropdown)
+  { name: 'Cash', type: 'Asset' },
+  { name: 'Accounts Receivable', type: 'Asset' },
+  { name: 'Interest Receivable', type: 'Asset' },
+  { name: 'Allowance for Doubtful Accounts', type: 'Asset', contra: true, level: 2 },
+  { name: 'Allowance for Sales Returns', type: 'Asset', contra: true, level: 2 },
+  { name: 'Deferred Gross Profit', type: 'Asset', contra: true, level: 2 },
+  { name: 'Inventory', type: 'Asset' },
+  { name: 'Advances to Suppliers', type: 'Asset' },
+  { name: 'Prepaid Rent', type: 'Asset' },
+  { name: 'Prepaid Insurance', type: 'Asset' },
+  { name: 'Land', type: 'Asset' },
+  { name: 'Buildings', type: 'Asset' },
+  { name: 'Equipment', type: 'Asset' },
+  { name: 'Accumulated Depreciation', type: 'Asset', contra: true, level: 3 },
+  { name: 'Intangible Assets', type: 'Asset' },
+  { name: 'Goodwill', type: 'Asset' },
+  // Liabilities
+  { name: 'Accounts Payable', type: 'Liability' },
+  { name: 'Interest Payable', type: 'Liability' },
+  { name: 'Advances from Customers', type: 'Liability' },
+  { name: 'Warranty Liability', type: 'Liability', level: 3 },
+  { name: 'Dividends Payable', type: 'Liability', level: 4 },
+  { name: 'Loans Payable', type: 'Liability' },
+  { name: 'Bonds Payable', type: 'Liability', level: 4 },
+  { name: 'Discount on Bonds Payable', type: 'Liability', contra: true, level: 4 },
+  { name: 'Premium on Bonds Payable', type: 'Liability', level: 4 },
+  // Equity
+  { name: 'Common Stock (at par)', type: 'Equity' },
+  { name: 'Additional Paid-in Capital', type: 'Equity' },
+  { name: 'Preferred Stock', type: 'Equity' },
+  { name: 'Retained Earnings', type: 'Equity' },
+  { name: 'Treasury Stock', type: 'Equity', contra: true, level: 4 },
+  // Revenues and gains
+  { name: 'Sales Revenue', type: 'Revenue' },
+  { name: 'Sales Returns', type: 'Revenue', contra: true, level: 2 },
+  { name: 'Interest Revenue', type: 'Revenue' },
+  { name: 'Gain on Sale of Assets', type: 'Revenue', word: 'a gain account', look: 'gain', level: 3 },
+  // Expenses and losses
+  { name: 'Cost of Goods Sold', type: 'Expense' },
+  { name: 'SG&A Expense', type: 'Expense' },
+  { name: 'R&D Expense', type: 'Expense' },
+  { name: 'Interest Expense', type: 'Expense' },
+  { name: 'Bad Debt Expense', type: 'Expense', level: 2 },
+  { name: 'Warranty Expense', type: 'Expense', level: 3 },
+  { name: 'Depreciation Expense', type: 'Expense', level: 3 },
+  { name: 'Unrealized Holding Loss on Inventory', type: 'Expense', word: 'a loss account', look: 'loss', level: 3 },
+  { name: 'Impairment Loss', type: 'Expense', word: 'a loss account', look: 'loss', level: 3 },
+].map(a => ({ level: 1, ...a }));
+const LEVELS = [
+  { n: 1, name: 'Level 1 – Journal Entry Basics' },
+  { n: 2, name: 'Level 2 – Advanced Revenue & Expense Recognition' },
+  { n: 3, name: 'Level 3 – Advanced Assets' },
+  { n: 4, name: 'Level 4 – Advanced Liabilities & Equity' },
+];
+const TYPE_GROUP = { Asset: 'Assets', Liability: 'Liabilities', Equity: "Shareholders' Equity", Revenue: 'Revenues', Expense: 'Expenses' };
+const groupLabel = (type, lvl) => lvl >= 3 && type === 'Revenue' ? 'Revenues and gains' : lvl >= 3 && type === 'Expense' ? 'Expenses and losses' : TYPE_GROUP[type];
+const DEBIT_INCREASES = { Asset: true, Expense: true, Liability: false, Equity: false, Revenue: false };
+const ACC = Object.fromEntries(ACCOUNTS.map(a => [a.name, a]));
+const debitIncreases = a => DEBIT_INCREASES[ACC[a].type] !== !!ACC[a].contra;
+
+/* Short aliases used in the task definitions below */
+const CASH = 'Cash', AR = 'Accounts Receivable', INV = 'Inventory', ADV_SUP = 'Advances to Suppliers',
+  PRE_RENT = 'Prepaid Rent', PRE_INS = 'Prepaid Insurance', AP = 'Accounts Payable',
+  ADV_CUS = 'Advances from Customers', LOAN = 'Loans Payable', INT_PAY = 'Interest Payable', INT_REC = 'Interest Receivable', CS = 'Common Stock (at par)',
+  APIC = 'Additional Paid-in Capital', RE = 'Retained Earnings', SALES = 'Sales Revenue',
+  INT_REV = 'Interest Revenue', COGS = 'Cost of Goods Sold', SGA = 'SG&A Expense',
+  RND = 'R&D Expense', INT_EXP = 'Interest Expense',
+  ALLOW = 'Allowance for Doubtful Accounts', ALLOW_RET = 'Allowance for Sales Returns', DGP = 'Deferred Gross Profit',
+  BAD = 'Bad Debt Expense', SRET = 'Sales Returns', ACC_DEP = 'Accumulated Depreciation', DEP_EXP = 'Depreciation Expense',
+  WAR_EXP = 'Warranty Expense', WAR_LIAB = 'Warranty Liability', HOLD_LOSS = 'Unrealized Holding Loss on Inventory',
+  IMP = 'Impairment Loss', GAIN = 'Gain on Sale of Assets', BONDS = 'Bonds Payable',
+  DISC = 'Discount on Bonds Payable', PREM = 'Premium on Bonds Payable', DIV_PAY = 'Dividends Payable', TREAS = 'Treasury Stock';
+
+/* Hints shown when a student uses account X where account Y was expected ("X|Y") */
+const CONFUSIONS = {
+  [`${SGA}|${PRE_RENT}`]: 'Instead, Prepaid Rent is affected. Rent paid for future months is an asset, not an expense.',
+  [`${SGA}|${PRE_INS}`]: 'Instead, Prepaid Insurance is affected. Insurance paid for future months is an asset, not an expense.',
+  [`${PRE_RENT}|${SGA}`]: 'Instead, SG&A Expense is affected.',
+  [`${PRE_INS}|${SGA}`]: 'Instead, SG&A Expense is affected.',
+  [`${SALES}|${ADV_CUS}`]: 'Instead, Advances from Customers is affected. Payments received before delivery are a liability, not revenue.',
+  [`${ADV_CUS}|${SALES}`]: 'Instead, Sales Revenue is affected.',
+  [`${INV}|${ADV_SUP}`]: 'Instead, Advances to Suppliers is affected. Payments made before the goods are received are a claim on the supplier, not Inventory.',
+  [`${ADV_SUP}|${INV}`]: 'Instead, Inventory is affected.',
+  [`${AP}|${LOAN}`]: 'Instead, Loans Payable is affected. Money borrowed from a bank (or a formal multi-year loan) is financial debt, not an amount owed for goods or services.',
+  [`${LOAN}|${AP}`]: 'Instead, Accounts Payable is affected. In this tool, amounts owed for goods, services or salaries are recorded in Accounts Payable.',
+  [`${LOAN}|${INT_PAY}`]: 'Instead, Interest Payable is affected. Interest owed is recorded separately from the loan itself.',
+  [`${AR}|${INT_REC}`]: 'Instead, Interest Receivable is affected (Accounts Receivable is also accepted).',
+  [`${CASH}|${INT_REC}`]: 'Instead, Interest Receivable is affected.',
+  [`Goodwill|Intangible Assets`]: 'Instead, Intangible Assets is affected. Goodwill only arises when one company acquires another company for a premium; patents, licences or trademarks are Intangible Assets.',
+  [`Preferred Stock|${CS}`]: 'Instead, Common Stock is affected.',
+  [`${CASH}|${AR}`]: 'Instead, Accounts Receivable is affected.',
+  [`${AR}|${CASH}`]: 'Instead, Cash is affected.',
+  [`${CASH}|${AP}`]: 'Instead, Accounts Payable is affected.',
+  [`${AP}|${CASH}`]: 'Instead, Cash is affected.',
+  [`${INV}|${COGS}`]: 'Instead, Cost of Goods Sold is affected.',
+  [`${COGS}|${INV}`]: 'Instead, Inventory is affected.',
+  [`${SGA}|${RND}`]: 'Instead, R&D Expense is affected. Research costs for new products or processes are R&D Expense.',
+  [`${RND}|${SGA}`]: 'Instead, SG&A Expense is affected. Selling and administrative costs (sales staff, advertising, office costs, rent) are SG&A Expense.',
+  [`${INT_REV}|${INT_EXP}`]: 'Instead, Interest Expense is affected. Interest on the company\'s own borrowing is an expense.',
+  [`${INT_EXP}|${INT_REV}`]: 'Instead, Interest Revenue is affected. Interest the company earns is revenue.',
+  [`${SALES}|${INT_REV}`]: 'Instead, Interest Revenue is affected. Interest earned is not revenue from selling goods or services.',
+  [`${RE}|${SALES}`]: 'Instead, Sales Revenue is affected.',
+  [`${CS}|${APIC}`]: 'Instead, Additional Paid-in Capital is affected. Common Stock only reflects the par value (number of shares × par value); amounts above par are Additional Paid-in Capital.',
+  [`${AR}|${ALLOW}`]: 'Instead, the contra-asset Allowance for Doubtful Accounts is affected.',
+  [`${BAD}|${ALLOW}`]: 'Instead, the contra-asset Allowance for Doubtful Accounts is affected.',
+  [`${SALES}|${SRET}`]: 'Instead, the contra-revenue account Sales Returns is affected. Returns are recorded separately so that gross sales remain visible.',
+  [`${AR}|${ALLOW_RET}`]: 'Instead, the contra-asset Allowance for Sales Returns is affected.',
+  [`${SRET}|${ALLOW_RET}`]: 'Instead, the contra-asset Allowance for Sales Returns is affected.',
+  [`${SALES}|${DGP}`]: 'Instead, the contra-asset Deferred Gross Profit is affected.',
+  [`Equipment|${ACC_DEP}`]: 'Instead, the contra-asset Accumulated Depreciation is affected.',
+  [`Buildings|${ACC_DEP}`]: 'Instead, the contra-asset Accumulated Depreciation is affected.',
+  [`${SGA}|${DEP_EXP}`]: 'Instead, Depreciation Expense is affected. In this tool, depreciation is recorded in its own account.',
+  [`${WAR_EXP}|${WAR_LIAB}`]: 'Instead, Warranty Liability is affected.',
+  [`${AP}|${WAR_LIAB}`]: 'Instead, Warranty Liability is affected. The obligation to repair goods under warranty is recorded in its own account.',
+  [`${INT_EXP}|${DISC}`]: 'Instead, the contra-liability Discount on Bonds Payable is affected.',
+  [`${INT_REV}|${PREM}`]: 'Instead, Premium on Bonds Payable is affected.',
+  [`${LOAN}|${BONDS}`]: 'Instead, Bonds Payable is affected. Bonds issued to investors are recorded in Bonds Payable.',
+  [`${AP}|${DIV_PAY}`]: 'Instead, Dividends Payable is affected. A declared dividend is recorded in its own liability account.',
+  [`${CS}|${TREAS}`]: 'Instead, Treasury Stock is affected.',
+  [`${SGA}|${RE}`]: 'Instead, Retained Earnings is affected.',
+};
+
+/* =====================================================================
+   2. HELPERS
+   ===================================================================== */
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+/* Fictitious companies. Every company-specific phrase is only used with its own company.
+   merch: goods it buys and resells · premises: 'store' or 'warehouse'
+   services: [verb phrase that follows the company name, min €, max €] · contract: follows "a 12-month ..."
+   rnd: an R&D project · brand: trademark purchase · equipment: [description, min €, max €, may be loan-financed?] */
+/* Company-specific details for Levels 1–4.
+   retail: sells to consumers in a store (gift cards) · warranty: durable goods sold with a warranty
+   unit: one inventory item for FIFO/LIFO tasks (cost range in €, step) · bundle: product + later service */
+const COMPANY_EXTRAS = {
+  'Alpineviews Outdoor Inc.': { retail: true,
+    warranty: { goods: 'tents and hiking boots', years: 'two-year' },
+    unit: { sg: 'tent of the model "Summit 2"', pl: 'tents of the model "Summit 2"', cost: [150, 400], step: 10 },
+    bundle: { product: 'a premium tent', p: [400, 1200], service: 'a 12-month repair service for the tent', s: [60, 200], later: 'over the next 12 months' } },
+  'Rhineworks Bikes Inc.': { retail: true,
+    warranty: { goods: 'bicycles and e-bikes', years: 'two-year' },
+    unit: { sg: 'e-bike of the model "Voltra"', pl: 'e-bikes of the model "Voltra"', cost: [1500, 3000], step: 100 },
+    bundle: { product: 'an e-bike', p: [2000, 4000], service: 'a 12-month maintenance plan for the e-bike', s: [120, 400], later: 'over the next 12 months' } },
+  'Northern Lights Coffee Inc.': {
+    unit: { sg: 'sack of roasted coffee beans (60 kg)', pl: 'sacks of roasted coffee beans (60 kg each)', cost: [300, 600], step: 10 },
+    bundle: { product: 'a delivery of roasted coffee beans', p: [1000, 4000], service: 'a one-day barista training course', s: [200, 800], later: 'next month' } },
+  'Harborview Tools Inc.': {
+    warranty: { goods: 'power tools', years: 'two-year' },
+    unit: { sg: 'power drill of the model "Torque X"', pl: 'power drills of the model "Torque X"', cost: [150, 400], step: 10 },
+    bundle: { product: 'a set of power tools', p: [1000, 5000], service: 'a 12-month maintenance service for the tools', s: [100, 600], later: 'over the next 12 months' } },
+  'Squareline Office Supplies Inc.': {
+    unit: { sg: 'pallet of printer paper', pl: 'pallets of printer paper', cost: [400, 900], step: 10 },
+    bundle: { product: 'a delivery of printer paper and toner cartridges', p: [1000, 5000], service: 'a 12-month printer maintenance service', s: [200, 1000], later: 'over the next 12 months' } },
+  'Brightwire Electronics Inc.': { retail: true,
+    warranty: { goods: 'laptops and smartphones', years: 'one-year' },
+    unit: { sg: 'laptop of the model "Nova 14"', pl: 'laptops of the model "Nova 14"', cost: [500, 1200], step: 10 },
+    bundle: { product: 'a laptop', p: [800, 2500], service: '12 months of IT support', s: [100, 400], later: 'over the next 12 months' } },
+  'Limetree Furniture Inc.': { retail: true,
+    warranty: { goods: 'sofas and dining tables', years: 'five-year' },
+    unit: { sg: 'sofa of the model "Harbour"', pl: 'sofas of the model "Harbour"', cost: [600, 1500], step: 50 },
+    bundle: { product: 'a dining table with six chairs', p: [1000, 4000], service: 'a 12-month furniture care plan', s: [100, 400], later: 'over the next 12 months' } },
+  'Watertower Beverages Inc.': {
+    unit: { sg: 'pallet of mineral water', pl: 'pallets of mineral water', cost: [200, 500], step: 10 },
+    bundle: { product: 'a delivery of bottled water and soft drinks', p: [1000, 5000], service: 'a 12-month water dispenser maintenance service', s: [200, 800], later: 'over the next 12 months' } },
+  'Greenleaf Landscaping Inc.': { retail: true,
+    warranty: { goods: 'garden tools', years: 'two-year' },
+    unit: { sg: 'ride-on lawn mower of the model "Meadow 90"', pl: 'ride-on lawn mowers of the model "Meadow 90"', cost: [1500, 3000], step: 100 },
+    bundle: { product: 'a selection of plants and garden tools', p: [500, 3000], service: 'a garden design consultation', s: [200, 800], later: 'next month' } },
+  'Bookworm Inc.': { retail: true,
+    unit: { sg: 'box of a bestselling novel (20 copies)', pl: 'boxes of a bestselling novel (20 copies each)', cost: [150, 300], step: 10 },
+    bundle: { product: 'a set of textbooks for a school class', p: [500, 3000], service: 'a creative writing workshop for the class', s: [200, 800], later: 'next month' } },
+  'Binary Software Inc.': {
+    warranty: { goods: 'barcode scanners and point-of-sale terminals', years: 'one-year' },
+    unit: { sg: 'barcode scanner of the model "Scan Pro"', pl: 'barcode scanners of the model "Scan Pro"', cost: [100, 300], step: 10 },
+    bundle: { product: 'twenty barcode scanners', p: [2000, 8000], service: '12 months of support for the scanners', s: [200, 1000], later: 'over the next 12 months' } },
+};
+
+const COMPANIES = [
+  { name: 'Alpineviews Outdoor Inc.', merch: 'hiking boots and tents', premises: 'store',
+    services: [['services the rental skis of a local ski school', 1000, 8000], ['runs a guided hiking tour for a local company\'s staff outing', 800, 5000], ['runs a two-day climbing course for a youth club', 1000, 6000]],
+    contract: 'ski servicing contract for the rental skis of a ski school',
+    rnd: 'a new lightweight tent', brand: 'hiking boots',
+    equipment: [['two delivery vans', 50000, 120000, true, true], ['a ski-servicing machine', 15000, 60000, true], ['shelving and display systems for its store', 10000, 50000, false, true]] },
+  { name: 'Rhineworks Bikes Inc.', merch: 'bicycles and e-bikes', premises: 'store',
+    services: [['services the e-bike fleet of a delivery company', 2000, 20000], ['runs a bike-fitting session for a customer', 100, 400], ['runs an e-bike safety course for a company\'s employees', 800, 5000]],
+    contract: 'maintenance contract for the e-bike fleet of a delivery company',
+    rnd: 'a new e-bike model', brand: 'bicycle helmets',
+    equipment: [['a delivery van', 25000, 60000, true], ['workshop equipment for bicycle repairs', 10000, 60000, false], ['display systems for its store', 10000, 40000, false, true]] },
+  { name: 'Northern Lights Coffee Inc.', merch: 'roasted coffee beans', premises: 'warehouse',
+    services: [['runs a barista training course for a café\'s staff', 500, 3000], ['services the coffee machines of a hotel chain', 1000, 12000], ['hosts a coffee-tasting workshop at a company event', 500, 3000]],
+    contract: 'maintenance contract for the coffee machines of a hotel chain',
+    rnd: 'a new decaf coffee blend', brand: 'coffee',
+    equipment: [['a delivery van', 25000, 60000, true], ['a forklift for its warehouse', 20000, 60000, true], ['a packaging machine for coffee bags', 40000, 200000, true]] },
+  { name: 'Harborview Tools Inc.', merch: 'power tools and hand tools', premises: 'warehouse',
+    services: [['repairs power tools for a construction company', 500, 8000], ['runs a workplace safety training course for a customer\'s staff', 1000, 6000], ['services the power tools of a car repair shop', 500, 5000]],
+    contract: 'maintenance contract for the power tools of a construction company',
+    rnd: 'a new cordless drill', brand: 'hand tools',
+    equipment: [['a forklift for its warehouse', 20000, 60000, true], ['warehouse shelving systems', 10000, 80000, false, true], ['two delivery trucks', 80000, 200000, true, true]] },
+  { name: 'Squareline Office Supplies Inc.', merch: 'printer paper and toner cartridges', premises: 'warehouse',
+    services: [['services the office printers of an insurance company', 500, 6000], ['assembles office furniture in a customer\'s new office', 1000, 10000], ['repairs the office printers of a law firm', 300, 4000]],
+    contract: 'maintenance contract for the office printers of an insurance company',
+    rnd: 'a recyclable toner cartridge', brand: 'notebooks',
+    equipment: [['two delivery vans', 50000, 120000, true, true], ['warehouse shelving systems', 10000, 80000, false, true], ['a forklift for its warehouse', 20000, 60000, true]] },
+  { name: 'Brightwire Electronics Inc.', merch: 'laptops and smartphones', premises: 'store', sellsComputers: true,
+    services: [['repairs laptops for a law firm', 500, 6000], ['repairs a customer\'s smartphone', 100, 500], ['sets up the IT systems of a small business', 2000, 20000]],
+    contract: 'IT support contract for a law firm',
+    rnd: 'a new line of wireless headphones', brand: 'headphones',
+    equipment: [['a delivery van', 25000, 60000, true], ['a security system for its store', 10000, 40000, false], ['display systems for its store', 10000, 40000, false, true]] },
+  { name: 'Limetree Furniture Inc.', merch: 'sofas and dining tables', premises: 'store',
+    services: [['provides interior design consulting for a hotel', 2000, 25000], ['assembles furniture at a customer\'s home', 150, 900], ['repairs chairs for a restaurant', 500, 4000]],
+    contract: 'furniture care contract for a hotel',
+    rnd: 'a new modular sofa', brand: 'garden furniture',
+    equipment: [['two delivery trucks', 80000, 200000, true, true], ['a forklift for its warehouse', 20000, 60000, true], ['display systems for its showroom', 10000, 50000, false, true]] },
+  { name: 'Watertower Beverages Inc.', merch: 'bottled water and soft drinks', premises: 'warehouse',
+    services: [['runs a drinks service at a customer\'s company event', 1000, 12000], ['cleans and disinfects the water dispensers of an office building', 300, 4000], ['services the water dispensers of a school', 300, 3000]],
+    contract: 'maintenance contract for the water dispensers of a school',
+    rnd: 'a new sugar-free soft drink', brand: 'lemonade',
+    equipment: [['two delivery trucks', 80000, 200000, true, true], ['a forklift for its warehouse', 20000, 60000, true], ['warehouse shelving systems', 10000, 80000, false, true]] },
+  { name: 'Greenleaf Landscaping Inc.', merch: 'plants and garden tools', premises: 'garden centre',
+    services: [['designs a new garden layout for a private customer', 800, 5000], ['maintains the green areas of an office park', 1000, 8000], ['prunes the trees of a school', 500, 4000]],
+    contract: 'garden maintenance contract for an office park',
+    rnd: 'a new peat-free potting soil', brand: 'potting soil',
+    equipment: [['a small excavator for its landscaping work', 30000, 90000, true], ['a greenhouse irrigation system', 10000, 60000, false], ['two delivery vans', 50000, 120000, true, true]] },
+  { name: 'Bookworm Inc.', merch: 'books and stationery', premises: 'store',
+    services: [['organises an author reading for a local library', 500, 3000], ['runs a creative writing workshop for a school', 400, 2500], ['binds the final theses of a university department', 300, 3000]],
+    contract: 'reading programme for a primary school',
+    rnd: 'a new e-reader app', brand: "children's books",
+    rndSpend: 'cloud computing services used this month', rndLab: 'an external software testing firm',
+    equipment: [['a delivery van', 25000, 60000, true], ['shelving and display systems for its store', 10000, 50000, false, true], ['a checkout system for its store', 10000, 40000, false]] },
+  { name: 'Binary Software Inc.', merch: 'barcode scanners and point-of-sale terminals', premises: 'warehouse', ownSoftware: true,
+    services: [['customises the ERP reports of a mid-sized manufacturer', 2000, 20000], ['trains the accounting staff of a customer on its ERP system', 800, 5000], ["migrates a retailer's data to its ERP system", 2000, 15000]],
+    contract: 'ERP support contract for a mid-sized manufacturer',
+    rnd: 'a new payroll module for its ERP system', brand: 'accounting software',
+    rndSpend: 'cloud computing services used this month', rndLab: 'an external software testing firm',
+    equipment: [['servers for its data centre', 20000, 150000, true, true], ['a backup power system for its data centre', 10000, 60000, true], ['a delivery van', 25000, 60000, true]] },
+].map(c => ({ rndSpend: 'materials used up this month', rndLab: 'an external testing laboratory', ...c, ...(COMPANY_EXTRAS[c.name] || {}), toString() { return this.name; } }));
+const ORD = { 1: 'first', 2: 'second', 3: 'third' };
+const an = n => (n === 8 || n === 11 || n === 18 || String(n).startsWith('8')) ? 'an' : 'a';
+const theForm = d => /^an? /.test(d) ? d.replace(/^an? /, 'the ') : 'the ' + d;
+/* A depreciable asset of the company: one of its equipment items or a building. */
+const ncAsset = C => {
+  if (Math.random() < 0.75) { const e = pick(C.equipment); return { acct: 'Equipment', desc: e[0], min: e[1], max: e[2], plural: !!e[4] }; }
+  return { acct: 'Buildings', desc: pick(['an office building', `a ${C.premises} building`]), min: 200000, max: 1200000 };
+};
+const rint = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+const stepRand = (a, b, s) => a + s * rint(0, Math.floor((b - a) / s));
+const roundTo = (x, s) => Math.max(s, Math.round(x / s) * s);
+const fmt = n => n.toLocaleString('en-US', { maximumFractionDigits: 2, minimumFractionDigits: Number.isInteger(n) ? 0 : 2 });
+const eur = n => '€ ' + fmt(n);
+const randDate = (mFrom = 0, mTo = 11) => { const m = rint(mFrom, mTo); return { m, d: rint(1, 28), str: `${MONTHS[m]} ${rint(1, 28)}` }; };
+const dateStr = () => randDate().str;
+const MONTH_DAYS = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+/* last day of a random month — for payments that close a period (interest, monthly expenses) */
+const monthEnd = () => { const m = rint(0, 11); return `${MONTHS[m]} ${MONTH_DAYS[m]}`; };
+const Dr = (a, x) => [a, 'Dr', x];
+const Cr = (a, x) => [a, 'Cr', x];
+
+/* Period ends for adjusting entries. Contracts and loans always start on the 1st of a month
+   inside the current period, so no earlier adjustment for the same item can exist. */
+const PERIOD_ENDS = [
+  { end: 11, len: 12, date: 'December 31', label: 'fiscal year-end; annual financial statements', rest: 'the next fiscal year' },
+  { end: 11, len: 12, date: 'December 31', label: 'fiscal year-end; annual financial statements', rest: 'the next fiscal year' },
+  { end: 5, len: 12, date: 'June 30', label: 'fiscal year-end; fiscal year July–June; annual financial statements', rest: 'the next fiscal year' },
+  { end: 2, len: 3, date: 'March 31', label: 'end of Q1; quarterly financial statements', rest: 'later quarters' },
+  { end: 5, len: 3, date: 'June 30', label: 'end of Q2; quarterly financial statements', rest: 'later quarters' },
+  { end: 8, len: 3, date: 'September 30', label: 'end of Q3; quarterly financial statements', rest: 'later quarters' },
+];
+function countText(start, covered, endDate) {
+  const names = Array.from({ length: covered }, (_, i) => MONTHS[(start + i) % 12]);
+  const list = covered <= 4 ? names.join(', ') : `${names[0]} through ${names[covered - 1]}`;
+  return `from ${MONTHS[start]} 1 to ${endDate} = ${covered} month${covered > 1 ? 's' : ''} (${list})`;
+}
+/* Picks a period end and a start month so that 1 ≤ months covered ≤ maxCovered and the start lies in the period. */
+function periodSetup(maxCovered) {
+  const p = pick(PERIOD_ENDS), covered = rint(1, Math.min(p.len, maxCovered));
+  const start = (p.end - covered + 1 + 12) % 12;
+  const names = Array.from({ length: covered }, (_, i) => MONTHS[(start + i) % 12]);
+  const list = covered <= 4 ? names.join(', ') : `${names[0]} through ${names[covered - 1]}`;
+  return { p, covered, startStr: `${MONTHS[start]} 1`,
+    count: `from ${MONTHS[start]} 1 to ${p.date} = ${covered} month${covered > 1 ? 's' : ''} (${list})`,
+    task: `Prepare the adjusting entry on ${p.date} (${p.label}).` };
+}
+
+/* =====================================================================
+   3. TRANSACTION TYPES
+   Each generator returns { text, lines, explain, hint? , noEntry? }.
+   lines: [account, 'Dr'|'Cr', amount]. The engine checks debits = credits.
+   ===================================================================== */
+const TYPES = [
+  /* ---------- Equity & financing ---------- */
+  { id: 'stock', group: 'Equity & financing', label: 'Issue common stock', gen(C) {
+    const shares = pick([10000, 20000, 25000, 40000, 50000, 100000]);
+    const par = pick([1, 1, 1, 2, 5, 0.5]);
+    const atPar = Math.random() < 0.2;
+    const price = atPar ? par : pick([2, 3, 4, 5, 6, 8, 10, 12, 15, 20, 25, 38].filter(p => p > par));
+    const cash = shares * price, cs = shares * par, apic = cash - cs;
+    const lines = [Dr(CASH, cash), Cr(CS, cs)];
+    if (apic > 0) lines.push(Cr(APIC, apic));
+    return {
+      text: `On ${dateStr()}, ${C} issues ${fmt(shares)} shares of ${eur(par)} par value common stock for ${eur(price)} per share in cash.`,
+      lines,
+      explain: `The company receives ${eur(cash)} in cash (asset increases → debit). Shareholders' equity increases (credit). ` +
+        (apic > 0 ? `The par value (${fmt(shares)} × ${eur(par)} = ${eur(cs)}) goes to Common Stock; the excess of ${eur(apic)} goes to Additional Paid-in Capital.`
+                  : `Because the shares are issued at par, the full amount goes to Common Stock; Additional Paid-in Capital is not affected.`),
+      hint: 'Common Stock is recorded at par value (number of shares × par value). Anything received above par goes to Additional Paid-in Capital.',
+    };
+  }},
+  { id: 'loan', group: 'Equity & financing', label: 'Take out a bank loan', gen(C) {
+    const x = stepRand(20000, 500000, 5000), n = rint(3, 10);
+    return {
+      text: pick([`On ${dateStr()}, ${C} takes out ${an(n)} ${n}-year bank loan of ${eur(x)}. The bank transfers the amount to ${C}'s bank account. Interest is paid annually; the full amount is repaid at the end of the term.`,
+                  `On ${dateStr()}, ${C} borrows ${eur(x)} from its bank for a term of ${n} years. The money is paid into ${C}'s bank account. Interest is paid annually; the full amount is repaid at the end of the term.`]),
+      lines: [Dr(CASH, x), Cr(LOAN, x)],
+      explain: `Cash increases (asset → debit) and the company now owes the bank ${eur(x)} (liability increases → credit). A loan is not revenue: the money has to be repaid.`,
+    };
+  }},
+  { id: 'repay', group: 'Equity & financing', label: 'Repay a loan (with interest)', gen(C) {
+    const L = 12000 * rint(5, 40), r = rint(3, 9), I = L * r / 100;
+    const P = roundTo(L * pick([0.1, 0.2, 0.25, 0.5]), 1000);
+    const computed = Math.random() < 0.5;
+    const text = computed
+      ? `${C} has a bank loan with an outstanding balance of ${eur(L)} at an interest rate of ${r}% p.a. The loan is repaid in annual installments of ${eur(P)}, and interest on the outstanding balance is paid once a year. On December 31 (the end of ${C}'s fiscal year), ${C} pays this year's installment together with the interest for the past 12 months by bank transfer.`
+      : `${C}'s bank loan is repaid in annual installments. On December 31 (the end of ${C}'s fiscal year), ${C} pays this year's installment of ${eur(P)} together with ${eur(I)} of interest for the past year by bank transfer.`;
+    return {
+      text,
+      lines: [Dr(LOAN, P), Dr(INT_EXP, I), Cr(CASH, P + I)],
+      explain: `Repaying principal reduces the liability (Loans Payable → debit ${eur(P)}). The interest is the cost of using borrowed funds for the period (Interest Expense → debit ${eur(I)}` +
+        (computed ? ` = ${eur(L)} × ${r}%` : '') + `). Cash decreases by the total of ${eur(P + I)} (credit).`,
+      hint: computed ? 'Interest = outstanding loan × annual interest rate. The cash payment covers both principal and interest.' : 'The cash payment covers both principal and interest.',
+    };
+  }},
+
+  /* ---------- Purchases & payments ---------- */
+  { id: 'buyinv', group: 'Purchases & payments', label: 'Buy inventory', gen(C) {
+    const x = stepRand(4000, 80000, 500), mode = pick(['cash', 'account', 'account', 'mixed']);
+    const d = dateStr();
+    if (mode === 'cash') return {
+      text: `On ${d}, ${C} purchases merchandise (${C.merch}) for ${eur(x)} and pays immediately by bank transfer.`,
+      lines: [Dr(INV, x), Cr(CASH, x)],
+      explain: `Inventory increases (asset → debit) and Cash decreases (asset → credit). This is an asset swap.`,
+    };
+    if (mode === 'account') return {
+      text: pick([`On ${d}, ${C} purchases merchandise (${C.merch}) costing ${eur(x)} from a supplier, agreeing to pay within 30 days.`,
+                  `On ${d}, ${C} receives a delivery of merchandise (${C.merch}) together with the supplier's invoice for ${eur(x)}, payable within 30 days.`]),
+      lines: [Dr(INV, x), Cr(AP, x)],
+      explain: `Inventory increases (asset → debit). The promise to pay later increases Accounts Payable (liability → credit).`,
+    };
+    const p = roundTo(x * pick([0.2, 0.3, 0.4, 0.5]), 500);
+    return {
+      text: `On ${d}, ${C} purchases merchandise (${C.merch}) costing ${eur(x)}. It pays ${eur(p)} immediately in cash; the rest is due in 60 days.`,
+      lines: [Dr(INV, x), Cr(CASH, p), Cr(AP, x - p)],
+      explain: `Inventory increases by the full cost of ${eur(x)} (debit). ${eur(p)} is paid in cash (credit Cash) and the remaining ${eur(x - p)} is owed to the supplier (credit Accounts Payable).`,
+      hint: 'The cash part and the part still owed together must equal the total price.',
+    };
+  }},
+  { id: 'buynca', group: 'Purchases & payments', label: 'Buy land, buildings, equipment or intangibles', gen(C) {
+    const eq = pick(C.equipment);
+    const assets = [
+      { acct: 'Land', desc: [`a plot of land for a new ${C.premises}`], min: 80000, max: 600000, s: 10000, credit: false, loan: [5, 10] },
+      { acct: 'Buildings', desc: ['an office building', `a ${C.premises} building`], min: 200000, max: 1200000, s: 10000, credit: false, loan: [5, 10] },
+      { acct: 'Equipment', desc: [eq[0]], min: eq[1], max: eq[2], s: 1000, credit: true, loan: eq[3] ? [3, 5] : null },
+      ...(C.sellsComputers ? [] : [{ acct: 'Equipment', desc: ['computer equipment for its offices'], min: 10000, max: 60000, s: 1000, credit: true, loan: null }]),
+      ...(C.ownSoftware ? [] : [{ acct: 'Intangible Assets', desc: ['a 5-year licence for inventory management software'], min: 20000, max: 150000, s: 1000, credit: true, loan: null }]),
+      { acct: 'Intangible Assets', desc: [`the trademark rights to a regional brand of ${C.brand}`], min: 30000, max: 200000, s: 1000, credit: true, loan: null },
+    ];
+    const a = pick(assets), desc = pick(a.desc), x = stepRand(a.min, a.max, a.s), d = dateStr();
+    const n = a.loan ? rint(a.loan[0], a.loan[1]) : 0;
+    const modes = ['cash'].concat(a.loan ? ['loan', 'cashloan'] : [], a.credit ? ['account', 'cashaccount'] : []);
+    const mode = pick(modes), p = roundTo(x * pick([0.2, 0.25, 0.3, 0.4, 0.5]), a.s);
+    const intro = `On ${d}, ${C} acquires ${desc} for ${eur(x)}.`;
+    const inc = `${a.acct} increases by ${eur(x)} (asset → debit).`;
+    switch (mode) {
+      case 'cash': return { text: `${intro} It pays the full amount by bank transfer.`, lines: [Dr(a.acct, x), Cr(CASH, x)],
+        explain: `${inc} Cash decreases by the same amount (credit). This is an asset swap.` };
+      case 'loan': return { text: `${intro} The purchase is financed entirely by ${an(n)} ${n}-year bank loan (repayable in full at the end of the term); the bank pays the seller directly.`, lines: [Dr(a.acct, x), Cr(LOAN, x)],
+        explain: `${inc} The company now owes the bank ${eur(x)} (Loans Payable → credit). Cash is not affected because the bank pays the seller directly.` };
+      case 'cashloan': return { text: `${intro} It pays ${eur(p)} by bank transfer and finances the rest with ${an(n)} ${n}-year bank loan (paid directly to the seller and repayable in full at the end of the term).`,
+        lines: [Dr(a.acct, x), Cr(CASH, p), Cr(LOAN, x - p)],
+        explain: `${inc} Cash decreases by ${eur(p)} (credit) and the remaining ${eur(x - p)} is borrowed from the bank (Loans Payable → credit).`,
+        hint: 'The cash part and the loan part together must equal the total price.' };
+      case 'account': return { text: `${intro} The seller's invoice is due in 30 days.`, lines: [Dr(a.acct, x), Cr(AP, x)],
+        explain: `${inc} The amount owed to the seller increases Accounts Payable (liability → credit).` };
+      default: return { text: `${intro} It pays ${eur(p)} immediately by bank transfer; the rest is due in 30 days.`,
+        lines: [Dr(a.acct, x), Cr(CASH, p), Cr(AP, x - p)],
+        explain: `${inc} Cash decreases by ${eur(p)} (credit) and the remaining ${eur(x - p)} is owed to the seller (Accounts Payable → credit).`,
+        hint: 'The cash part and the part still owed together must equal the total price.' };
+    }
+  }},
+  { id: 'paysup', group: 'Purchases & payments', label: 'Pay a supplier', gen(C) {
+    const o = stepRand(5000, 60000, 1000), full = Math.random() < 0.5, p = full ? o : roundTo(o * pick([0.25, 0.4, 0.5, 0.6]), 500);
+    return {
+      text: full && Math.random() < 0.5
+        ? `On ${dateStr()}, ${C} pays a supplier invoice of ${eur(o)} in full by bank transfer. The invoice is for merchandise delivered last month.`
+        : `On ${dateStr()}, ${C} transfers ${eur(p)} to a supplier. The payment settles ${full ? 'the full amount' : 'part'} of the ${eur(o)} it owes on a supplier invoice for merchandise delivered last month.`,
+      lines: [Dr(AP, p), Cr(CASH, p)],
+      explain: `The liability to the supplier decreases (Accounts Payable → debit) and Cash decreases (credit). No expense arises: the inventory was already recorded when it was bought.`,
+    };
+  }},
+  { id: 'prepay', group: 'Purchases & payments', label: 'Pay in advance (rent, insurance, goods)', gen(C) {
+    const kind = pick(['rent', 'insurance', 'goods']), d = randDate(0, 10), start = `${MONTHS[d.m + 1]} 1`;
+    if (kind === 'goods') {
+      const x = stepRand(2000, 50000, 500);
+      return { text: `On ${d.str}, ${C} pays ${eur(x)} in advance to a supplier for merchandise (${C.merch}) that will be delivered next month.`,
+        lines: [Dr(ADV_SUP, x), Cr(CASH, x)],
+        explain: `The goods have not been received yet, so Inventory is not affected. The company has a claim on the supplier to deliver goods — an asset (Advances to Suppliers → debit). Cash decreases (credit).` };
+    }
+    const n = kind === 'rent' ? pick([3, 6, 12]) : pick([6, 12]), x = n * stepRand(300, 4000, 100);
+    const acct = kind === 'rent' ? PRE_RENT : PRE_INS;
+    return { text: kind === 'rent'
+        ? `On ${d.str}, ${C} pays ${eur(x)} in cash for ${n} months of ${C.premises} rent in advance (rental period starting ${start}).`
+        : `On ${d.str}, ${C} pays the premium of ${eur(x)} in cash for a ${n}-month fire insurance policy starting on ${start}.`,
+      lines: [Dr(acct, x), Cr(CASH, x)],
+      explain: `The payment covers future periods, so it is not an expense yet. It is recorded as an asset (${acct} → debit); Cash decreases (credit). The expense is recognized later, as time passes.` };
+  }},
+  { id: 'recvgoods', group: 'Purchases & payments', label: 'Receive goods paid in advance', gen(C) {
+    const x = stepRand(2000, 40000, 500), full = Math.random() < 0.5, y = full ? x : x + stepRand(1000, 30000, 500);
+    return {
+      text: `Last month, ${C} paid ${eur(x)} in advance to a supplier for merchandise (${C.merch}). On ${dateStr()}, the merchandise is delivered. ` +
+        (full ? 'The advance payment covers the full price.' : `The total price is ${eur(y)}; the remaining ${eur(y - x)} is due in 30 days.`),
+      lines: full ? [Dr(INV, x), Cr(ADV_SUP, x)] : [Dr(INV, y), Cr(ADV_SUP, x), Cr(AP, y - x)],
+      explain: `The goods are now received, so Inventory increases by their full price of ${eur(y)} (debit). The claim on the supplier is used up (Advances to Suppliers → credit ${eur(x)})` +
+        (full ? '.' : `, and the remaining ${eur(y - x)} is owed (Accounts Payable → credit).`),
+    };
+  }},
+
+  /* ---------- Sales & collections ---------- */
+  { id: 'salegoods', group: 'Sales & collections', label: 'Sell goods', gen(C) {
+    const s = stepRand(2000, 90000, 500), c = roundTo(s * pick([0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75]), 100);
+    const mode = pick(['cash', 'account', 'account', 'mixed']), d = dateStr();
+    const cost = ` The merchandise sold had cost ${C} ${eur(c)}.`;
+    const cogs = [Dr(COGS, c), Cr(INV, c)];
+    const tail = ` At the same time, the goods leave Inventory (credit ${eur(c)}) and their cost becomes an expense (Cost of Goods Sold → debit).`;
+    if (mode === 'cash') return { text: `On ${d}, ${C} sells merchandise (${C.merch}) for ${eur(s)} in cash.${cost}`,
+      lines: [Dr(CASH, s), Cr(SALES, s), ...cogs],
+      explain: `Revenue is earned at the moment of sale (Sales Revenue → credit ${eur(s)}); Cash increases (debit).${tail}` };
+    if (mode === 'account') return { text: pick([`On ${d}, ${C} sells merchandise (${C.merch}) for ${eur(s)} to a customer, who agrees to pay within 30 days.${cost}`,
+                                                `On ${d}, ${C} delivers merchandise (${C.merch}) to a customer and issues an invoice for ${eur(s)}, payable within 30 days.${cost}`]),
+      lines: [Dr(AR, s), Cr(SALES, s), ...cogs],
+      explain: `Revenue is earned at the moment of sale, even though no cash has been received yet (Sales Revenue → credit). The customer owes the amount (Accounts Receivable → debit).${tail}` };
+    const p = roundTo(s * pick([0.2, 0.3, 0.4, 0.5]), 500);
+    return { text: `On ${d}, ${C} sells merchandise (${C.merch}) for ${eur(s)}. The customer pays ${eur(p)} in cash immediately and the rest within 30 days.${cost}`,
+      lines: [Dr(CASH, p), Dr(AR, s - p), Cr(SALES, s), ...cogs],
+      explain: `Revenue of ${eur(s)} is earned at the moment of sale (credit). ${eur(p)} is received in cash (debit Cash) and ${eur(s - p)} is still owed by the customer (debit Accounts Receivable).${tail}`,
+      hint: 'Revenue is the full sales price; the cash part and the part still owed together must equal it. Don\'t forget the cost of the goods sold.' };
+  }},
+  { id: 'saleserv', group: 'Sales & collections', label: 'Sell services', gen(C) {
+    const [svc, lo, hi] = pick(C.services), x = stepRand(lo, hi, lo < 1000 ? 10 : 100), cash = Math.random() < 0.5;
+    return {
+      text: `On ${dateStr()}, ${C} ${svc} and ${cash ? `receives ${eur(x)} in cash` : `sends an invoice for ${eur(x)}, payable within 30 days`}.`,
+      lines: [Dr(cash ? CASH : AR, x), Cr(SALES, x)],
+      explain: `The service has been delivered, so revenue is earned (Sales Revenue → credit). ${cash ? 'Cash increases (debit).' : 'The customer owes the amount (Accounts Receivable → debit).'} There is no Cost of Goods Sold because no merchandise leaves Inventory.`,
+    };
+  }},
+  { id: 'advcus', group: 'Sales & collections', label: 'Receive a customer advance', gen(C) {
+    const d = randDate(0, 10), goods = Math.random() < 0.5;
+    const n = pick([3, 6, 12]), x = goods ? stepRand(2000, 60000, 1000) : n * stepRand(100, 2000, 50);
+    return {
+      text: goods ? `On ${d.str}, ${C} receives ${eur(x)} in cash from a customer as an advance payment for merchandise (${C.merch}) to be delivered in two months.`
+                  : `On ${d.str}, ${C} receives ${eur(x)} in cash for a ${n}-month ${C.contract}, starting on ${MONTHS[d.m + 1]} 1.`,
+      lines: [Dr(CASH, x), Cr(ADV_CUS, x)],
+      explain: `Cash increases (debit). Nothing has been delivered yet, so no revenue is earned. Instead, the company owes the customer ${goods ? 'goods' : 'services'} (Advances from Customers → credit), a liability.`,
+    };
+  }},
+  { id: 'deliver', group: 'Sales & collections', label: 'Deliver goods paid in advance', gen(C) {
+    const a = 2000 * rint(3, 30), half = Math.random() < 0.5, rev = half ? a / 2 : a;
+    const c = roundTo(rev * pick([0.4, 0.5, 0.6, 0.7]), 100);
+    const m1 = rint(0, 8), m2 = m1 + rint(1, 3);
+    const d1 = `${MONTHS[m1]} ${rint(1, 28)}`, d2 = `${MONTHS[m2]} ${rint(1, 28)}`;
+    return {
+      text: `On ${d1}, ${C} received ${eur(a)} from a customer as an advance payment for merchandise (${C.merch}), recorded as Advances from Customers. On ${d2}, ${C} delivers ${half ? 'half of the merchandise' : 'all of the merchandise'}. The merchandise delivered had cost ${C} ${eur(c)}. Record the delivery on ${d2}.`,
+      lines: [Dr(ADV_CUS, rev), Cr(SALES, rev), Dr(COGS, c), Cr(INV, c)],
+      explain: `With the delivery, ${half ? 'half of the advance' : 'the advance'} (${eur(rev)}) is earned: the obligation to the customer decreases (Advances from Customers → debit) and revenue is recognized (Sales Revenue → credit). The goods delivered leave Inventory (credit ${eur(c)}) and become Cost of Goods Sold (debit). No cash moves on ${d2}.`,
+      hint: 'Revenue = the part of the advance that has now been earned. COGS = the cost of the goods delivered.',
+    };
+  }},
+  { id: 'collect', group: 'Sales & collections', label: 'Collect a receivable', gen(C) {
+    const o = stepRand(3000, 80000, 1000), full = Math.random() < 0.6, p = full ? o : roundTo(o * pick([0.25, 0.4, 0.5]), 500);
+    return {
+      text: full ? pick([`On ${dateStr()}, a customer transfers ${eur(p)} to ${C} to settle an invoice for merchandise delivered last month.`,
+                         `On ${dateStr()}, ${C} receives a bank transfer of ${eur(p)} from a customer, settling an invoice for merchandise delivered last month.`])
+                 : `On ${dateStr()}, a customer transfers ${eur(p)} to ${C} as partial payment of an invoice of ${eur(o)} for merchandise delivered last month.`,
+      lines: [Dr(CASH, p), Cr(AR, p)],
+      explain: `Cash increases (debit) and the claim on the customer decreases (Accounts Receivable → credit). No revenue is recorded now: it was already recognized at the time of the sale.`,
+    };
+  }},
+
+  /* ---------- Expenses & interest ---------- */
+  { id: 'opex', group: 'Expenses & interest', label: 'Operating expenses (SG&A, R&D)', gen(C) {
+    const x = stepRand(500, 60000, 100), d = monthEnd();
+    const items = [
+      { a: SGA, pay: 'cash', t: `pays ${eur(x)} in salaries to its sales staff for the current month` },
+      { a: SGA, pay: 'cash', t: `pays ${eur(x)} in salaries to its administrative staff for the current month` },
+      { a: SGA, pay: 'cash', t: `pays ${eur(x)} for an online advertising campaign that ran this month` },
+      { a: SGA, pay: 'cash', t: `pays the electricity bill of ${eur(x)} for its offices for the current month` },
+      { a: RND, pay: 'cash', t: `pays ${eur(x)} in salaries to employees working on a research project for ${C.rnd}` },
+      { a: RND, pay: 'cash', t: `pays ${eur(x)} for ${C.rndSpend} in a research project for ${C.rnd}` },
+      { a: SGA, pay: 'account', t: `receives an invoice of ${eur(x)} for office cleaning services performed this month; the invoice is due next month` },
+      { a: SGA, pay: 'account', t: `receives an invoice of ${eur(x)} from a marketing agency for a campaign that ran this month; payment is due in 30 days` },
+      { a: RND, pay: 'account', t: `receives an invoice of ${eur(x)} from ${C.rndLab} for tests performed this month in a research project for ${C.rnd}; payment is due in 30 days` },
+      { a: SGA, pay: 'accrued', t: '' },
+    ];
+    const it = pick(items);
+    const why = it.a === SGA ? 'selling, general and administrative cost' : 'research and development cost';
+    if (it.pay === 'accrued') {
+      const p = pick(PERIOD_ENDS), mo = MONTHS[p.end], next = MONTHS[(p.end + 1) % 12];
+      return {
+        text: `The ${mo} salaries of ${C}'s sales staff (${eur(x)}) will only be paid on ${next} 5. Prepare the entry on ${p.date} (${p.label}).`,
+        lines: [Dr(SGA, x), Cr(AP, x)],
+        explain: `The employees worked in ${mo}, so the expense belongs to the period ending ${p.date} even though cash is paid later (accrual basis): SG&A Expense → debit. The amount still owed is a liability (in this tool: Accounts Payable → credit).`,
+      };
+    }
+    return {
+      text: `On ${d}, ${C} ${it.t}.`,
+      lines: [Dr(it.a, x), Cr(it.pay === 'cash' ? CASH : AP, x)],
+      explain: `The resources were used up this period, so this is an expense (${it.a} → debit, a ${why}). ` +
+        (it.pay === 'cash' ? 'Cash decreases (credit).' : 'It is not paid yet, so the company owes the amount (Accounts Payable → credit).'),
+    };
+  }},
+  { id: 'intexp', group: 'Expenses & interest', label: 'Interest expense (paid or accrued)', gen(C) {
+    const k = rint(3, 30), L = 12000 * k, r = rint(3, 9), yrs = rint(3, 10);
+    if (Math.random() < 0.5) {
+      const I = L * r / 400;
+      return {
+        text: `On ${pick(['March 31', 'June 30', 'September 30', 'December 31'])}, ${C} pays the quarterly interest on its ${eur(L)} bank loan by bank transfer. The loan has a term of ${yrs} years and an interest rate of ${r}% p.a.; interest is paid quarterly, and the full amount is repaid at the end of the term.`,
+        lines: [Dr(INT_EXP, I), Cr(CASH, I)],
+        explain: `Interest for one quarter = ${eur(L)} × ${r}% × 3/12 = ${eur(I)}. It is the cost of using borrowed funds (Interest Expense → debit); Cash decreases (credit). The loan itself is unchanged.`,
+        hint: 'Interest = loan amount × annual interest rate × months / 12.',
+      };
+    }
+    const ps = periodSetup(11), m = ps.covered, I = L * r * m / 1200;
+    return {
+      text: `On ${ps.startStr}, ${C} took out ${an(yrs)} ${yrs}-year bank loan of ${eur(L)} at ${r}% p.a. Interest is paid once a year, on the anniversary of the loan; the full amount is repaid at the end of the term. ${ps.task.replace('adjusting entry', 'adjusting entry for interest')}`,
+      lines: [Dr(INT_EXP, I), Cr(INT_PAY, I)],
+      alternatives: [[Dr(INT_EXP, I), Cr(AP, I)]],
+      explain: `Counting the months the loan has been outstanding: ${ps.count}. Interest incurred = ${eur(L)} × ${r}% × ${m}/12 = ${eur(I)}. It belongs to this period even though it is paid later (Interest Expense → debit). The unpaid interest is a separate short-term obligation (Interest Payable → credit; Accounts Payable is also accepted). The loan itself, and therefore Loans Payable, does not change.`,
+      hint: 'Interest = loan amount × annual interest rate × months outstanding / 12. Count the months from the start date to the period end, including the first month.',
+    };
+  }},
+  { id: 'intrev', group: 'Expenses & interest', label: 'Interest revenue (received or accrued)', gen(C) {
+    const r = rint(1, 4), dep = 12000 * rint(2, 40);
+    if (Math.random() < 0.5) {
+      const I = dep * r / 100;
+      return {
+        text: `On December 31 (the end of ${C}'s fiscal year), ${C}'s bank credits ${eur(I)} of interest to ${C}'s bank account for a fixed-term deposit held during the past year.`,
+        lines: [Dr(CASH, I), Cr(INT_REV, I)],
+        explain: `Cash increases (debit). The interest is income earned on money the company has invested (Interest Revenue → credit).`,
+      };
+    }
+    const ps = periodSetup(11), m = ps.covered, I = dep * r * m / 1200;
+    return {
+      text: `On ${ps.startStr}, ${C} placed ${eur(dep)} in a 12-month fixed-term bank deposit at ${r}% p.a. The interest will only be paid out at maturity. ${ps.task.replace('adjusting entry', 'adjusting entry for interest')}`,
+      lines: [Dr(INT_REC, I), Cr(INT_REV, I)],
+      alternatives: [[Dr(AR, I), Cr(INT_REV, I)]],
+      explain: `Counting the months the deposit has earned interest: ${ps.count}. Interest earned = ${eur(dep)} × ${r}% × ${m}/12 = ${eur(I)}. The revenue belongs to this period even though the cash arrives later (Interest Revenue → credit). The bank owes the company this amount (Interest Receivable → debit; Accounts Receivable is also accepted).`,
+      hint: 'Interest = deposit × annual interest rate × months / 12. Count the months from the start date to the period end, including the first month.',
+    };
+  }},
+
+  /* ---------- Adjusting entries ---------- */
+  { id: 'adjprepaid', group: 'Adjusting entries', label: 'Prepaid rent / insurance used up', gen(C) {
+    const rent = Math.random() < 0.5, acct = rent ? PRE_RENT : PRE_INS;
+    const n = rent ? pick([3, 6, 12]) : pick([6, 12]), mon = stepRand(300, 4000, 100), A = mon * n;
+    const ps = periodSetup(n - 1), m = ps.covered, x = mon * m;
+    return {
+      text: `On ${ps.startStr}, ${C} paid ${eur(A)} in advance for ${n} months of ${rent ? 'office rent' : 'insurance coverage'}, starting that day, and recorded it as ${acct}. ${ps.task}`,
+      lines: [Dr(SGA, x), Cr(acct, x)],
+      explain: `Counting the months used up so far: ${ps.count}. So ${m} of the ${n} months paid for ${m === 1 ? 'has' : 'have'} been used up. That part — ${eur(A)} × ${m}/${n} = ${eur(x)} — is now an expense (SG&A Expense → debit). The prepaid asset decreases by the same amount (${acct} → credit). The remaining ${eur(A - x)} (${n - m} month${n - m > 1 ? 's' : ''}) stays an asset and becomes an expense in ${ps.p.rest}.`,
+      hint: `Only the months that have passed by ${ps.p.date} are an expense: amount paid × months used / months paid for. Count the months including the first month.`,
+    };
+  }},
+  { id: 'adjunearned', group: 'Adjusting entries', label: 'Customer advance for services earned', gen(C) {
+    const n = pick([3, 6, 12]), mon = stepRand(100, 2000, 50), F = mon * n;
+    const ps = periodSetup(n - 1), m = ps.covered, x = mon * m;
+    return {
+      text: `On ${ps.startStr}, ${C} received ${eur(F)} in cash for a ${n}-month ${C.contract}, starting that day, and recorded it as Advances from Customers. ${C} provides the service evenly over the contract period. ${ps.task}`,
+      lines: [Dr(ADV_CUS, x), Cr(SALES, x)],
+      explain: `Counting the months of service provided so far: ${ps.count}. So ${m} of the ${n} contract months ${m === 1 ? 'has' : 'have'} been provided. That part — ${eur(F)} × ${m}/${n} = ${eur(x)} — is earned: the obligation to the customer decreases (Advances from Customers → debit) and revenue is recognized (Sales Revenue → credit). The remaining ${eur(F - x)} (${n - m} month${n - m > 1 ? 's' : ''}) stays a liability until the service is provided in ${ps.p.rest}.`,
+      hint: `Only the months of service already provided by ${ps.p.date} are revenue: contract amount × months provided / contract months. Count the months including the first month.`,
+    };
+  }},
+
+  /* ---------- Closing ---------- */
+  { id: 'closing', group: 'Closing entries', label: 'Close revenue and expense accounts', gen(C) {
+    for (;;) {
+    const S = stepRand(80000, 600000, 1000);
+    const bal = [[SALES, S]];
+    if (Math.random() < 0.5) bal.push([INT_REV, stepRand(200, 4000, 50)]);
+    bal.push([COGS, roundTo(S * pick([0.4, 0.45, 0.5, 0.55, 0.6, 0.65]), 1000)]);
+    bal.push([SGA, roundTo(S * pick([0.1, 0.15, 0.2, 0.25]), 100)]);
+    if (Math.random() < 0.5) bal.push([RND, roundTo(S * pick([0.05, 0.08, 0.1]), 100)]);
+    if (Math.random() < 0.6) bal.push([INT_EXP, stepRand(300, 8000, 100)]);
+    const isRev = a => ACC[a].type === 'Revenue';
+    const rev = bal.filter(b => isRev(b[0])).reduce((t, b) => t + b[1], 0);
+    const exp = bal.filter(b => !isRev(b[0])).reduce((t, b) => t + b[1], 0);
+    const ni = rev - exp;
+    if (ni === 0) continue;
+    const lines = [...bal.filter(b => isRev(b[0])).map(([a, x]) => Dr(a, x)), ...(ni < 0 ? [Dr(RE, -ni)] : []),
+      ...bal.filter(b => !isRev(b[0])).map(([a, x]) => Cr(a, x)), ...(ni > 0 ? [Cr(RE, ni)] : [])];
+    const rows = bal.map(([a, x]) => `<tr><td>${a}</td><td class="num">${eur(x)}</td></tr>`).join('');
+    return {
+      text: `At the end of the fiscal year (December 31), all adjusting entries have been made. The income statement accounts of ${C} have the following balances:<table>${rows}</table>Record the closing entries, closing each account directly to Retained Earnings (one combined entry or separate entries are both fine).`,
+      lines,
+      explain: `Revenue and expense accounts are temporary and must be reset to zero. Revenue accounts have credit balances, so they are closed with a debit; expense accounts have debit balances, so they are closed with a credit. ${ni > 0 ? `The difference is net income: revenues ${eur(rev)} − expenses ${eur(exp)} = ${eur(ni)}, which increases Retained Earnings (credit).` : `The difference is a net loss: expenses ${eur(exp)} − revenues ${eur(rev)} = ${eur(-ni)}, which reduces Retained Earnings (debit).`}`,
+      hint: 'Close each revenue and expense account with its full balance; the difference goes to Retained Earnings.',
+    };
+    }
+  }},
+
+  /* ---------- No entry ---------- */
+  { id: 'noentry', group: 'Transaction or not?', label: 'Events that need no entry', gen(C) {
+    const x = stepRand(2000, 50000, 500), d = dateStr();
+    const ev = pick([
+      `signs a contract with a supplier to buy merchandise (${C.merch}) worth ${eur(x)}; the goods will be delivered and paid for next month`,
+      `hires a new sales manager, who will start work next month at a monthly salary of ${eur(roundTo(x / 5, 100))}`,
+      `meets a potential customer to discuss a possible order worth ${eur(x)}`,
+      `receives a price quote of ${eur(x)} from a supplier for new equipment`,
+      `signs a rental agreement for an additional warehouse; the rental period and the first payment start next year`,
+      `expects to win a contract worth ${eur(x)} with a new client; the contract is scheduled to be signed next month`,
+    ]);
+    return {
+      text: `On ${d}, ${C} ${ev}.`,
+      lines: [], noEntry: true,
+      explain: `No journal entry is required. The company's assets, liabilities and equity have not changed yet: signing a contract that neither side has started to perform, receiving a quote, or expecting a deal does not create an asset or a liability. An entry is needed once one side performs (goods or services are delivered, or cash is paid) or once an event or period-end estimate changes an asset, a liability or equity.`,
+    };
+  }},
+
+  /* =================== LEVEL 1 additions =================== */
+  { id: 'gift', level: 1, group: 'Sales & collections', label: 'Gift cards (sale and redemption)', fits: C => C.retail, gen(C) {
+    if (Math.random() < 0.5) {
+      const n = pick([20, 30, 40, 50, 60, 80, 100]), v = pick([25, 50, 100]), x = n * v;
+      return {
+        text: `During the week ending ${dateStr()}, ${C} sells ${n} gift cards worth ${eur(v)} each for cash in its ${C.premises}. Customers can redeem the cards for merchandise at any time.`,
+        lines: [Dr(CASH, x), Cr(ADV_CUS, x)],
+        explain: `Cash increases by ${n} × ${eur(v)} = ${eur(x)} (debit). Nothing has been delivered yet: the company owes the card holders merchandise worth ${eur(x)}, a liability (Advances from Customers → credit). Revenue is only recognized when a card is redeemed.`,
+      };
+    }
+    const v = pick([25, 50, 100]), s = v + stepRand(20, 600, 10), c = Math.round(s * pick([0.5, 0.55, 0.6, 0.65, 0.7]));
+    return {
+      text: `On ${dateStr()}, a customer buys merchandise (${C.merch}) for ${eur(s)} in ${C}'s ${C.premises}. The customer pays with a gift card worth ${eur(v)}, which ${C} sold last month, and pays the remaining ${eur(s - v)} in cash. The merchandise sold had cost ${C} ${eur(c)}.`,
+      lines: [Dr(CASH, s - v), Dr(ADV_CUS, v), Cr(SALES, s), Dr(COGS, c), Cr(INV, c)],
+      explain: `With the delivery, the full sales price of ${eur(s)} is earned (Sales Revenue → credit). It is paid partly by redeeming the gift card, which settles the obligation recorded when the card was sold (Advances from Customers → debit ${eur(v)}), and partly in cash (debit ${eur(s - v)}). The goods leave Inventory (credit ${eur(c)}) and become Cost of Goods Sold (debit).`,
+      hint: 'Revenue is the full price of the goods; the gift card and the cash together pay for it. Don\'t forget the cost of the goods sold.',
+    };
+  }},
+
+  /* =================== LEVEL 2 =================== */
+  { id: 'bundle', level: 2, group: 'Revenue recognition', label: 'Bundle sales (product + service)', gen(C) {
+    const b = C.bundle, f = pick([0.8, 0.9]);
+    let P, S;
+    do { P = stepRand(b.p[0], b.p[1], 100); S = stepRand(b.s[0], b.s[1], 20); } while (P < 2 * S);
+    const aP = Math.round(P * f), aS = Math.round(S * f), B = aP + aS, cash = true;
+    return {
+      text: `On ${dateStr()}, ${C} sells a package to a customer for ${eur(B)}${cash ? ', paid in cash' : ', payable within 30 days'}. The package contains ${b.product} (stand-alone selling price ${eur(P)}) and ${b.service} (stand-alone selling price ${eur(S)}). The product is handed over immediately; the service will be provided ${b.later}. Record the sale, allocating the package price by relative stand-alone selling prices (ignore cost of goods sold).`,
+      lines: [Dr(cash ? CASH : AR, B), Cr(SALES, aP), Cr(ADV_CUS, aS)],
+      explain: `The stand-alone prices add up to ${eur(P)} + ${eur(S)} = ${eur(P + S)}; the package costs ${eur(B)}, i.e. ${Math.round(f * 100)}% of that. Product: ${eur(P)} × ${eur(B)} / ${eur(P + S)} = ${eur(aP)}, earned now (Sales Revenue → credit). Service: ${eur(S)} × ${eur(B)} / ${eur(P + S)} = ${eur(aS)}, not yet earned (Advances from Customers → credit). ${cash ? 'Cash' : 'Accounts Receivable'} increases by the full ${eur(B)} (debit).`,
+      hint: 'Allocate the package price in proportion to the stand-alone prices: stand-alone price × package price / sum of stand-alone prices.',
+      check: { P, S, B, aP, aS },
+    };
+  }},
+  { id: 'instsale', level: 2, group: 'Revenue recognition', label: 'Installment / cost recovery method: the sale', gen(C) {
+    const S = 300 * rint(20, 400), g = pick([20, 25, 30, 40]), GP = S * g / 100, cost = S - GP, inst = Math.random() < 0.5;
+    return {
+      text: `On ${dateStr()}, ${C} sells merchandise (${C.merch}) for ${eur(S)} to a newly founded business customer, who will pay in three equal annual installments of ${eur(S / 3)}. The merchandise had cost ${C} ${eur(cost)} (gross profit percentage: ${g}%). Because collection is ${inst ? 'uncertain' : 'highly uncertain'}, ${C} uses the ${inst ? 'installment' : 'cost recovery'} method. Record the sale.`,
+      lines: [Dr(AR, S), Cr(INV, cost), Cr(DGP, GP)],
+      explain: `Under the ${inst ? 'installment' : 'cost recovery'} method, no revenue is recognized at the time of sale because collection is ${inst ? 'uncertain' : 'highly uncertain'}. The receivable is recorded at the full amount (Accounts Receivable → debit ${eur(S)}), the goods leave Inventory (credit ${eur(cost)}), and the gross profit of ${eur(S)} − ${eur(cost)} = ${eur(GP)} is deferred (Deferred Gross Profit → credit, a contra-asset account that reduces the receivable).`,
+      hint: 'Deferred Gross Profit = sales price − cost of the merchandise.',
+    };
+  }},
+  { id: 'instcoll', level: 2, group: 'Revenue recognition', label: 'Installment method: collection', gen(C) {
+    const S = 300 * rint(20, 400), g = pick([20, 25, 30, 40]), I = S / 3, k = rint(1, 3), gp = I * g / 100, cg = I - gp;
+    return {
+      text: `${C} sold merchandise (${C.merch}) for ${eur(S)} to a business customer, payable in three equal annual installments of ${eur(I)}. The gross profit percentage is ${g}%, and ${C} uses the installment method; the sale${k > 1 ? ' and the earlier installments were' : ' was'} recorded accordingly. On ${monthEnd()}, the customer pays the ${ORD[k]} installment. Record the collection and the resulting revenue.`,
+      lines: [Dr(CASH, I), Cr(AR, I), Dr(COGS, cg), Dr(DGP, gp), Cr(SALES, I)],
+      explain: `First, the cash collection: Cash increases and the receivable decreases by ${eur(I)}. Under the installment method, each payment is recognized as revenue (Sales Revenue → credit ${eur(I)}) with the same gross profit percentage: gross profit = ${eur(I)} × ${g}% = ${eur(gp)} is released from Deferred Gross Profit (debit), and the rest, ${eur(cg)}, is Cost of Goods Sold (debit).`,
+      hint: 'Revenue = installment received; gross profit released = installment × gross profit percentage; COGS = the rest.',
+      check: { S, g, k, method: 'inst' },
+    };
+  }},
+  { id: 'crcoll', level: 2, group: 'Revenue recognition', label: 'Cost recovery method: collection', gen(C) {
+    const S = 300 * rint(20, 400), g = pick([20, 25, 30, 40]), I = S / 3, k = rint(1, 3), cost = S * (100 - g) / 100;
+    const before = (k - 1) * I, remaining = Math.max(0, cost - before), cg = Math.min(I, remaining), gp = I - cg;
+    const lines = [Dr(CASH, I), Cr(AR, I), Dr(COGS, cg), Dr(DGP, gp), Cr(SALES, I)].filter(l => l[2] > 0);
+    return {
+      text: `${C} sold merchandise (${C.merch}) that had cost ${eur(cost)} for ${eur(S)} to a customer with a high risk of default, payable in three equal annual installments of ${eur(I)}. ${C} uses the cost recovery method; the sale${k > 1 ? ' and the earlier installments were' : ' was'} recorded accordingly. On ${monthEnd()}, the customer pays the ${ORD[k]} installment. Record the collection and the resulting revenue.`,
+      lines,
+      explain: `First, the cash collection: Cash increases and the receivable decreases by ${eur(I)}; the payment is recognized as revenue (Sales Revenue → credit ${eur(I)}). Under the cost recovery method, the cost of ${eur(cost)} must be covered first. ` +
+        (k === 1 ? `This is the first payment, so nothing has been recovered yet. `
+          : remaining === 0 ? `Earlier payments (${eur(before)}) have already covered the full cost. `
+          : `Earlier payments have covered ${eur(before)} of the cost, so ${eur(remaining)} of the cost remains. `) +
+        (gp === 0 ? `Therefore, the whole payment is Cost of Goods Sold (debit ${eur(cg)}); no gross profit is recognized yet.`
+          : cg === 0 ? `Therefore, the whole payment is gross profit released from Deferred Gross Profit (debit ${eur(gp)}); no Cost of Goods Sold arises.`
+          : `Therefore, ${eur(cg)} of this payment is Cost of Goods Sold (debit) and the remaining ${eur(gp)} is gross profit released from Deferred Gross Profit (debit).`),
+      hint: 'Cost recovery: the cost is covered first (COGS = payment until the full cost is recovered); only then is gross profit recognized.',
+      check: { S, g, k, method: 'cr' },
+    };
+  }},
+  { id: 'bdpct', level: 2, group: 'Receivables & returns', label: 'Bad debts: percentage-of-sales method', gen(C) {
+    const CS = stepRand(200000, 3000000, 10000), p = rint(1, 5), x = CS * p / 100;
+    return {
+      text: `For the fiscal year ending December 31, ${C} reports credit sales of ${eur(CS)}. Using the percentage-of-sales method, ${C} estimates that ${p}% of credit sales will turn out to be uncollectible. Record the adjusting entry on December 31.`,
+      lines: [Dr(BAD, x), Cr(ALLOW, x)],
+      explain: `Estimated bad debts = ${eur(CS)} × ${p}% = ${eur(x)}. The expected loss belongs to the period of the sales (Bad Debt Expense → debit). Because we do not yet know which customers will not pay, the receivables are reduced indirectly through the contra-asset Allowance for Doubtful Accounts (credit). Under the percentage-of-sales method, the existing balance of the allowance does not matter.`,
+      hint: 'Bad debt expense = credit sales × estimated percentage.',
+    };
+  }},
+  { id: 'bdaging', level: 2, group: 'Receivables & returns', label: 'Bad debts: aging method', gen(C) {
+    for (;;) {
+      const rows = [['Not yet due', pick([1, 2, 3, 5])], ['1–60 days past due', pick([10, 15, 20])], ['61–180 days past due', pick([30, 40, 50])], ['More than 180 days past due', pick([80, 100])]]
+        .map(([l, pc]) => [l, stepRand(5000, 90000, 1000), pc]);
+      const T = rows.reduce((t, r) => t + r[1] * r[2] / 100, 0), debit = Math.random() < 0.4;
+      const B = debit ? roundTo(T * pick([0.2, 0.3, 0.4]), 100) : roundTo(T * pick([0.2, 0.3, 0.4, 0.5, 0.6]), 100);
+      const x = debit ? T + B : T - B;
+      if (x <= 0 || B <= 0) continue;
+      const table = '<table><tr><td><b>Age of receivables</b></td><td class="num"><b>Amount</b></td><td class="num"><b>Estimated uncollectible</b></td></tr>' +
+        rows.map(r => `<tr><td>${r[0]}</td><td class="num">${eur(r[1])}</td><td class="num">${r[2]}%</td></tr>`).join('') + '</table>';
+      return {
+        text: `On December 31, ${C} estimates its uncollectible accounts using the aging method:${table}Before the adjustment, the Allowance for Doubtful Accounts has a ${debit ? 'debit' : 'credit'} balance of ${eur(B)}${debit ? ' (write-offs during the year exceeded the allowance)' : ''}. Record the adjusting entry.`,
+        lines: [Dr(BAD, x), Cr(ALLOW, x)],
+        explain: `Required ending balance of the allowance: ${rows.map(r => `${eur(r[1])} × ${r[2]}%`).join(' + ')} = ${eur(T)}. ` +
+          (debit ? `The allowance currently has a debit balance of ${eur(B)}, so it must be filled up by ${eur(T)} + ${eur(B)} = ${eur(x)}.` : `The allowance already has a credit balance of ${eur(B)}, so only ${eur(T)} − ${eur(B)} = ${eur(x)} must be added.`) +
+          ` Bad Debt Expense → debit; Allowance for Doubtful Accounts → credit.`,
+        hint: 'The allowance must end at the estimated total. An existing credit balance reduces the entry; an existing debit balance must be added.',
+        check: { rows, B, debit },
+      };
+    }
+  }},
+  { id: 'writeoff', level: 2, group: 'Receivables & returns', label: 'Write off an uncollectible account', gen(C) {
+    const x = stepRand(500, 25000, 100);
+    return {
+      text: `On ${dateStr()}, ${C} learns that a customer who owes ${eur(x)} for merchandise bought last year has gone bankrupt and will not pay. ${C} uses the allowance method and writes off the receivable.`,
+      lines: [Dr(ALLOW, x), Cr(AR, x)],
+      explain: `The receivable is removed (Accounts Receivable → credit) and the allowance set up for exactly such cases is used up (Allowance for Doubtful Accounts → debit). No expense arises now: the expected loss was already recorded as Bad Debt Expense when the allowance was estimated. Net receivables do not change.`,
+    };
+  }},
+  { id: 'retest', level: 2, group: 'Receivables & returns', label: 'Sales returns: estimate', gen(C) {
+    const CS = stepRand(20000, 500000, 1000), r = pick([2, 3, 4, 5]), x = CS * r / 100, m = rint(0, 11);
+    return {
+      text: `During ${MONTHS[m]}, ${C} sells merchandise (${C.merch}) on account for ${eur(CS)}. Based on past experience, ${C} expects customers to return ${r}% of these sales. Record the estimated sales returns at the end of ${MONTHS[m]} (ignore the effect on inventory).`,
+      lines: [Dr(SRET, x), Cr(ALLOW_RET, x)],
+      explain: `Expected returns = ${eur(CS)} × ${r}% = ${eur(x)}. Revenue must reflect the returns expected from this period's sales, so the estimate is recorded in the contra-revenue account Sales Returns (debit). The contra-asset Allowance for Sales Returns (credit) reduces the receivables the company expects to cancel. Sales Revenue itself remains unchanged.`,
+      hint: 'Estimated returns = credit sales × expected return percentage.',
+    };
+  }},
+  { id: 'retact', level: 2, group: 'Receivables & returns', label: 'Sales returns: actual return', gen(C) {
+    const x = stepRand(200, 10000, 50);
+    return {
+      text: `On ${dateStr()}, a customer returns merchandise (${C.merch}) that it had bought on account for ${eur(x)}. ${C} uses the allowance method and had already estimated returns for these sales. Record the return (ignore the effect on inventory).`,
+      lines: [Dr(ALLOW_RET, x), Cr(AR, x)],
+      explain: `The customer no longer owes the amount (Accounts Receivable → credit). The return was already anticipated in Sales Returns when the estimate was recorded, so revenue is not reduced a second time; instead, the allowance is used up (Allowance for Sales Returns → debit).`,
+    };
+  }},
+
+  /* =================== LEVEL 3 =================== */
+  { id: 'costflow', level: 3, group: 'Inventory', label: 'Cost of goods sold: FIFO, LIFO, weighted average', gen(C) {
+    const u = C.unit, method = pick(['FIFO', 'LIFO', 'AVG']);
+    let b0, q1, q2, c0, c1, c2, n;
+    for (;;) {
+      b0 = rint(2, 5); q1 = rint(3, 6); q2 = rint(3, 6);
+      [c0, c1, c2] = [0, 1, 2].map(() => stepRand(u.cost[0], u.cost[1], u.step));
+      if (new Set([c0, c1, c2]).size < 3) continue;
+      n = rint(b0 + 1, b0 + q1 + q2 - 1);
+      const T = b0 * c0 + q1 * c1 + q2 * c2, U = b0 + q1 + q2;
+      if (method === 'AVG' && T % U !== 0) continue;
+      break;
+    }
+    const layers = [[b0, c0], [q1, c1], [q2, c2]], U = b0 + q1 + q2, T = b0 * c0 + q1 * c1 + q2 * c2;
+    const take = order => { let left = n; const used = []; for (const [q, c] of order) { const t = Math.min(q, left); if (t > 0) used.push([t, c]); left -= t; } return used; };
+    const used = method === 'FIFO' ? take(layers) : method === 'LIFO' ? take([...layers].reverse()) : null;
+    const cogs = used ? used.reduce((s, [t, c]) => s + t * c, 0) : T / U * n;
+    const p = roundTo(Math.max(c0, c1, c2) * pick([1.3, 1.4, 1.5, 1.6]), u.step), rev = n * p, cash = Math.random() < 0.5;
+    const m = rint(0, 9), dA = rint(3, 10), dB = rint(15, 25), dS = rint(2, 20);
+    const us = k => k === 1 ? `1 ${u.sg}` : `${k} ${u.pl}`;
+    const table = '<table><tr><td><b>Date</b></td><td><b>Event</b></td><td class="num"><b>Units</b></td><td class="num"><b>Cost per unit</b></td></tr>' +
+      `<tr><td>${MONTHS[m]} 1</td><td>Opening stock</td><td class="num">${b0}</td><td class="num">${eur(c0)}</td></tr>` +
+      `<tr><td>${MONTHS[m]} ${dA}</td><td>Purchase</td><td class="num">${q1}</td><td class="num">${eur(c1)}</td></tr>` +
+      `<tr><td>${MONTHS[m]} ${dB}</td><td>Purchase</td><td class="num">${q2}</td><td class="num">${eur(c2)}</td></tr></table>`;
+    const mName = { FIFO: 'FIFO (first-in, first-out)', LIFO: 'LIFO (last-in, first-out)', AVG: 'weighted-average' }[method];
+    const calc = used ? used.map(([t, c]) => `${t} × ${eur(c)}`).join(' + ') + ` = ${eur(cogs)}` : `average cost = ${eur(T)} / ${U} units = ${eur(T / U)} per unit; COGS = ${n} × ${eur(T / U)} = ${eur(cogs)}`;
+    return {
+      text: `${C}'s inventory records for ${u.pl} show:${table}On ${MONTHS[m + 1]} ${dS}, ${C} sells ${us(n)} to a customer for ${eur(p)} each${cash ? ' in cash' : ', payable within 30 days'}. ${C} uses the ${mName} cost-flow assumption. Record the sale.`,
+      lines: [Dr(cash ? CASH : AR, rev), Cr(SALES, rev), Dr(COGS, cogs), Cr(INV, cogs)],
+      explain: `Revenue = ${n} × ${eur(p)} = ${eur(rev)} (Sales Revenue → credit; ${cash ? 'Cash' : 'Accounts Receivable'} → debit). ` +
+        (method === 'FIFO' ? 'Under FIFO, the oldest units are sold first: ' : method === 'LIFO' ? 'Under LIFO, the most recently purchased units are sold first: ' : 'Under the weighted-average method, all units available carry the same average cost: ') +
+        `${calc}. Cost of Goods Sold → debit; Inventory → credit.`,
+      hint: method === 'AVG' ? 'Average cost = total cost of all units available / number of units available.' : `List the units in the order in which ${method === 'FIFO' ? 'they were bought (oldest first)' : 'they were bought, starting with the most recent purchase'} and take units until the quantity sold is reached.`,
+      check: { layers, n, method, cogs },
+    };
+  }},
+  { id: 'invwd', level: 3, group: 'Inventory', label: 'Inventory write-down (lower of cost or NRV)', gen(C) {
+    const u = C.unit, q = rint(5, 60), c = stepRand(u.cost[0], u.cost[1], u.step), down = Math.random() < 0.7;
+    const maxDiff = Math.max(u.step, Math.floor(c * 0.4 / u.step) * u.step), diff = stepRand(u.step, maxDiff, u.step);
+    const v = down ? c - diff : c + diff, loss = q * (c - v);
+    const text = `On December 31, ${C} has ${q} ${u.pl} in stock, recorded at a cost of ${eur(c)} each. Because market prices have ${down ? 'fallen' : 'risen'}, the net realizable value is now ${eur(v)} per unit. Record any entry required.`;
+    if (!down) return {
+      text, lines: [], noEntry: true,
+      noEntryHint: 'Compare the net realizable value with the cost. Has the inventory lost value?',
+      explain: `No entry is required. Inventory is measured at the lower of cost and net realizable value. Here, the net realizable value (${eur(v)}) is above cost (${eur(c)}), so the inventory stays at cost; it is not written up (conservatism).`,
+    };
+    return {
+      text,
+      lines: [Dr(HOLD_LOSS, loss), Cr(INV, loss)],
+      alternatives: [[Dr(COGS, loss), Cr(INV, loss)]],
+      explain: `The net realizable value (${eur(v)}) is below cost (${eur(c)}), so the inventory must be written down: ${q} × (${eur(c)} − ${eur(v)}) = ${eur(loss)}. The loss is a period expense: Unrealized Holding Loss on Inventory → debit (recording it in Cost of Goods Sold is also accepted); Inventory → credit.`,
+      hint: 'Write-down = units × (cost per unit − net realizable value per unit).',
+    };
+  }},
+  { id: 'warracc', level: 3, group: 'Warranties', label: 'Warranties: estimate the liability', fits: C => C.warranty, gen(C) {
+    const S = stepRand(100000, 5000000, 10000), w = rint(1, 5), x = S * w / 100;
+    return {
+      text: `During the fiscal year ending December 31, ${C} sold ${C.warranty.goods} with a ${C.warranty.years} warranty for a total of ${eur(S)}. Based on experience, ${C} estimates that warranty repairs will cost ${w}% of these sales. Record the warranty expense on December 31 (the sales themselves have already been recorded).`,
+      lines: [Dr(WAR_EXP, x), Cr(WAR_LIAB, x)],
+      explain: `Estimated warranty costs = ${eur(S)} × ${w}% = ${eur(x)}. The expense is matched to the period of the sales, even though the repairs happen later (Warranty Expense → debit). The obligation to carry out the repairs is a liability (Warranty Liability → credit).`,
+      hint: 'Warranty expense = sales × estimated warranty percentage.',
+    };
+  }},
+  { id: 'warruse', level: 3, group: 'Warranties', label: 'Warranties: repairs carried out', fits: C => C.warranty, gen(C) {
+    const x = stepRand(200, 30000, 100), parts = Math.random() < 0.5;
+    return {
+      text: parts
+        ? `On ${dateStr()}, ${C} repairs ${C.warranty.goods} brought in by customers under warranty, using spare parts from its own inventory that cost ${eur(x)}. The warranty liability was recorded when the goods were sold.`
+        : `On ${dateStr()}, ${C} pays an external repair shop ${eur(x)} by bank transfer for warranty repairs on ${C.warranty.goods} sold last year. The warranty liability was recorded when the goods were sold.`,
+      lines: [Dr(WAR_LIAB, x), Cr(parts ? INV : CASH, x)],
+      explain: `The repairs fulfil part of the warranty obligation, so the liability decreases (Warranty Liability → debit). ${parts ? 'The spare parts leave Inventory' : 'Cash decreases'} (credit). No expense arises now: the expense was already recognized as Warranty Expense in the period of the sale.`,
+    };
+  }},
+  { id: 'deprec', level: 3, group: 'Property, plant & equipment', label: 'Straight-line depreciation', gen(C) {
+    const a = ncAsset(C), bld = a.acct === 'Buildings';
+    const n = bld ? pick([25, 40, 50]) : pick([4, 5, 8, 10]);
+    const S = bld ? pick([0, 50000, 100000]) : pick([0, 0, 1000, 2000, 5000]);
+    const mmLo = Math.max(1, Math.ceil((a.min - S) / (12 * n) / 10)), mmHi = Math.max(mmLo, Math.floor((a.max - S) / (12 * n) / 10));
+    const mm = 10 * rint(mmLo, mmHi), annual = 12 * mm, A = S + annual * n;
+    const current = Math.random() < 0.5, s = current ? rint(1, 11) : rint(0, 11), yrs = rint(1, 2);
+    const months = current ? 12 - s : 12, x = mm * months;
+    const ct = current ? countText(s, months, 'December 31') : '';
+    return {
+      text: `${current ? `On ${MONTHS[s]} 1 of this year,` : `On ${MONTHS[s]} 1, ${yrs === 1 ? 'one year' : 'two years'} before the current fiscal year began,`} ${C} acquired ${a.desc} for ${eur(A)}. ${C} expects a useful life of ${n} years and ${S ? `a salvage value of ${eur(S)}` : 'no salvage value'}, and uses the straight-line method. Record the depreciation for the fiscal year ending December 31.`,
+      lines: [Dr(DEP_EXP, x), Cr(ACC_DEP, x)],
+      explain: `Annual depreciation = (${eur(A)} − ${eur(S)}) / ${n} years = ${eur(annual)}. ` +
+        (current ? `The asset was used for part of the year only: ${ct}. Depreciation = ${eur(annual)} × ${months}/12 = ${eur(x)}.` : `The asset was used for the whole year, so the full annual amount of ${eur(x)} applies.`) +
+        ` Depreciation Expense → debit; Accumulated Depreciation (contra-asset) → credit. The asset account keeps its original cost.`,
+      hint: current ? 'Annual depreciation = (cost − salvage value) / useful life; for part of a year, multiply by months used / 12 (count the first month).' : 'Annual depreciation = (cost − salvage value) / useful life.',
+      check: { A, S, n, months, x },
+    };
+  }},
+  { id: 'impair', level: 3, group: 'Property, plant & equipment', label: 'Impairment test', gen(C) {
+    for (;;) {
+      const a = ncAsset(C), A = stepRand(Math.max(a.min, 10000), a.max, 1000), AD = roundTo(A * pick([0.2, 0.3, 0.4, 0.5, 0.6]), 1000), BV = A - AD;
+      const imp = Math.random() < 0.7;
+      const CF = roundTo(BV * (imp ? pick([0.6, 0.7, 0.8, 0.9]) : pick([1.1, 1.2, 1.3])), 1000);
+      const FV = imp ? roundTo(CF * pick([0.6, 0.7, 0.8, 0.9]), 1000) : roundTo(BV * pick([1.05, 1.1, 1.15, 1.2]), 1000);
+      if (BV <= 0 || (imp ? !(CF < BV && FV < CF) : !(CF > BV && FV > BV))) continue;
+      const table = `<table><tr><td>Cost</td><td class="num">${eur(A)}</td></tr><tr><td>Accumulated depreciation</td><td class="num">${eur(AD)}</td></tr><tr><td>Sum of expected future cash flows</td><td class="num">${eur(CF)}</td></tr><tr><td>Fair value</td><td class="num">${eur(FV)}</td></tr></table>`;
+      const text = `At year-end, ${C} tests ${theForm(a.desc)} for impairment after a sharp drop in ${a.plural ? 'their' : 'its'} expected use. The following information is available:${table}Record any entry required.`;
+      if (!imp) return {
+        text, lines: [], noEntry: true,
+        noEntryHint: 'Compare the book value (cost − accumulated depreciation) with the expected future cash flows and the fair value. Is the asset worth less than its book value?',
+        explain: `No entry is required. Book value = ${eur(A)} − ${eur(AD)} = ${eur(BV)}. Both the expected future cash flows (${eur(CF)}) and the fair value (${eur(FV)}) are above the book value, so the asset is still worth at least the amount shown in the books. It is not impaired, and it is not written up either.`,
+      };
+      const L = BV - FV;
+      return {
+        text,
+        lines: [Dr(IMP, L), Cr(a.acct, L)],
+        alternatives: [[Dr(IMP, L), Cr(ACC_DEP, L)]],
+        explain: `Book value = ${eur(A)} − ${eur(AD)} = ${eur(BV)}. The sum of future cash flows (${eur(CF)}) is below the book value, so the asset is impaired and must be written down to its fair value: ${eur(BV)} − ${eur(FV)} = ${eur(L)}. Impairment Loss → debit; ${a.acct} → credit (crediting Accumulated Depreciation is also accepted).`,
+        hint: 'Step 1: compare the sum of future cash flows with the book value. Step 2 (only if impaired): write the asset down to its fair value.',
+        check: { A, AD, CF, FV, L },
+      };
+    }
+  }},
+  { id: 'ppesale', level: 3, group: 'Property, plant & equipment', label: 'Sale of PP&E at a gain', gen(C) {
+    for (;;) {
+      const a = ncAsset(C), A = stepRand(Math.max(a.min, 10000), a.max, 1000), AD = roundTo(A * pick([0.3, 0.4, 0.5, 0.6, 0.7]), 1000), BV = A - AD;
+      const P = roundTo(BV * pick([1.1, 1.2, 1.3, 1.5]), 1000), g = P - BV;
+      if (BV <= 0 || g <= 0) continue;
+      return {
+        text: `On ${dateStr()}, ${C} sells ${theForm(a.desc)} for ${eur(P)}, received by bank transfer. Original cost: ${eur(A)}; accumulated depreciation up to the date of sale (already recorded): ${eur(AD)}.`,
+        lines: [Dr(CASH, P), Dr(ACC_DEP, AD), Cr(a.acct, A), Cr(GAIN, g)],
+        explain: `Book value = ${eur(A)} − ${eur(AD)} = ${eur(BV)}. The asset is removed at its original cost (${a.acct} → credit ${eur(A)}) together with its accumulated depreciation (debit ${eur(AD)}); Cash increases by ${eur(P)}. The difference, ${eur(P)} − ${eur(BV)} = ${eur(g)}, is a gain (Gain on Sale of Assets → credit).`,
+        hint: 'Gain = sales price − book value (cost − accumulated depreciation).',
+        check: { A, AD, P },
+      };
+    }
+  }},
+
+  /* =================== LEVEL 4 =================== */
+  { id: 'bondissue', level: 4, group: 'Bonds', label: 'Issue bonds (par, discount, premium)', gen(C) {
+    const F = 100000 * rint(5, 50), n = rint(5, 10), c = rint(3, 8), kind = pick(['par', 'disc', 'prem']);
+    const m = kind === 'par' ? c : kind === 'disc' ? c + rint(1, 2) : c - rint(1, 2);
+    let pv = F / Math.pow(1 + m / 100, n);
+    for (let t = 1; t <= n; t++) pv += F * c / 100 / Math.pow(1 + m / 100, t);
+    const P = kind === 'par' ? F : Math.round(pv);
+    const lines = kind === 'par' ? [Dr(CASH, P), Cr(BONDS, F)] : kind === 'disc' ? [Dr(CASH, P), Dr(DISC, F - P), Cr(BONDS, F)] : [Dr(CASH, P), Cr(BONDS, F), Cr(PREM, P - F)];
+    return {
+      text: `On ${dateStr()}, ${C} issues bonds with a total face value of ${eur(F)}, a coupon rate of ${c}% (paid annually) and a term of ${n} years. The market interest rate for comparable bonds is ${m}%, and investors pay ${eur(P)} in total. Record the issuance.`,
+      lines,
+      explain: kind === 'par'
+        ? `Coupon rate and market rate are equal (${c}%), so the bonds are issued at par: Cash and Bonds Payable both increase by ${eur(F)}.`
+        : kind === 'disc'
+          ? `The coupon rate (${c}%) is below the market rate (${m}%), so investors pay less than face value: the bonds are issued at a discount of ${eur(F)} − ${eur(P)} = ${eur(F - P)}. Cash → debit ${eur(P)}; Bonds Payable → credit at face value ${eur(F)}; the difference goes to the contra-liability Discount on Bonds Payable (debit), which is amortized over the bond's term.`
+          : `The coupon rate (${c}%) is above the market rate (${m}%), so investors pay more than face value: the bonds are issued at a premium of ${eur(P)} − ${eur(F)} = ${eur(P - F)}. Cash → debit ${eur(P)}; Bonds Payable → credit at face value ${eur(F)}; the difference goes to Premium on Bonds Payable (credit), which is amortized over the bond's term.`,
+      hint: 'Bonds Payable is always recorded at face value; the difference to the cash received is a discount or a premium.',
+      check: { F, n, c, m, P, kind },
+    };
+  }},
+  { id: 'bondcoupon', level: 4, group: 'Bonds', label: 'Coupon payment (bonds issued at par)', gen(C) {
+    const F = 100000 * rint(5, 50), c = rint(3, 8), semi = Math.random() < 0.5, I = semi ? F * c / 200 : F * c / 100;
+    const date = semi ? pick(['June 30', 'December 31']) : 'December 31';
+    return {
+      text: `${C} has bonds outstanding with a face value of ${eur(F)} and a coupon rate of ${c}% p.a.; the bonds were issued at par. Interest is paid ${semi ? 'semiannually, on June 30 and December 31' : 'annually on December 31'}. Record the interest payment on ${date}.`,
+      lines: [Dr(INT_EXP, I), Cr(CASH, I)],
+      explain: `${semi ? `Semiannual interest = ${eur(F)} × ${c}% × 6/12` : `Annual interest = ${eur(F)} × ${c}%`} = ${eur(I)}. Because the bonds were issued at par, the interest expense equals the cash paid (Interest Expense → debit; Cash → credit). Bonds Payable does not change.`,
+      hint: 'Coupon = face value × coupon rate (× 6/12 for a semiannual payment).',
+    };
+  }},
+  { id: 'bondmature', level: 4, group: 'Bonds', label: 'Repayment at maturity', gen(C) {
+    const F = 100000 * rint(5, 50), c = rint(3, 8), n = rint(5, 10), I = F * c / 100;
+    return {
+      text: `${['Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten'][n - 5]} years ago, ${C} issued bonds with a face value of ${eur(F)} at par; the coupon rate is ${c}%, paid annually. On December 31 (the end of ${C}'s fiscal year), the bonds mature: ${C} repays the face value and pays the final annual coupon by bank transfer.`,
+      lines: [Dr(BONDS, F), Dr(INT_EXP, I), Cr(CASH, F + I)],
+      explain: `The liability is settled at face value (Bonds Payable → debit ${eur(F)}). The final coupon of ${eur(F)} × ${c}% = ${eur(I)} is interest expense (debit). Cash decreases by ${eur(F + I)} (credit).`,
+      hint: 'Cash paid = face value + final coupon.',
+    };
+  }},
+  { id: 'divdecl', level: 4, group: 'Dividends & share transactions', label: 'Declare a cash dividend', gen(C) {
+    const N = 1000 * rint(50, 2000), d = rint(1, 3), x = N * d, m = rint(0, 10);
+    return {
+      text: `On ${MONTHS[m]} ${rint(1, 20)}, the board of directors of ${C} declares a cash dividend of ${eur(d)} per share on its ${fmt(N)} outstanding common shares, payable on ${MONTHS[m + 1]} ${rint(1, 28)}.`,
+      lines: [Dr(RE, x), Cr(DIV_PAY, x)],
+      explain: `Total dividend = ${fmt(N)} × ${eur(d)} = ${eur(x)}. With the declaration, the company owes the dividend to its shareholders (Dividends Payable → credit). Dividends are a distribution of earnings, not an expense, so they reduce Retained Earnings directly (debit).`,
+      hint: 'Total dividend = number of outstanding shares × dividend per share.',
+    };
+  }},
+  { id: 'divpay', level: 4, group: 'Dividends & share transactions', label: 'Pay a declared dividend', gen(C) {
+    const N = 1000 * rint(50, 2000), d = rint(1, 3), x = N * d, m = rint(0, 10);
+    return {
+      text: `On ${MONTHS[m]} ${rint(1, 20)}, ${C} declared a cash dividend of ${eur(x)} in total (${eur(d)} per share on ${fmt(N)} shares); the declaration was recorded on that date. On ${MONTHS[m + 1]} ${rint(1, 28)}, ${C} pays the dividend by bank transfer.`,
+      lines: [Dr(DIV_PAY, x), Cr(CASH, x)],
+      explain: `The liability recorded at the declaration is settled (Dividends Payable → debit) and Cash decreases (credit). Retained Earnings is not affected again: it was already reduced when the dividend was declared.`,
+    };
+  }},
+  { id: 'stockdiv', level: 4, group: 'Dividends & share transactions', label: 'Stock dividend', gen(C) {
+    const N = 1000 * rint(10, 500), pct = pick([5, 10, 15]), k = N * pct / 100, par = pick([1, 2, 5, 10]), mp = par + rint(2, 30);
+    return {
+      text: `${C} has ${fmt(N)} common shares outstanding with a par value of ${eur(par)} per share. On ${dateStr()}, the board declares and distributes a ${pct}% stock dividend. The market price of the shares on that date is ${eur(mp)}.`,
+      lines: [Dr(RE, k * mp), Cr(CS, k * par), Cr(APIC, k * (mp - par))],
+      explain: `New shares = ${fmt(N)} × ${pct}% = ${fmt(k)}. Retained Earnings is reduced by their market value: ${fmt(k)} × ${eur(mp)} = ${eur(k * mp)} (debit). Common Stock increases by the par value, ${fmt(k)} × ${eur(par)} = ${eur(k * par)}, and the excess, ${fmt(k)} × (${eur(mp)} − ${eur(par)}) = ${eur(k * (mp - par))}, goes to Additional Paid-in Capital (credits). Total shareholders' equity does not change.`,
+      hint: 'Retained Earnings is reduced by the market value of the new shares; Common Stock gets the par value and APIC the rest.',
+    };
+  }},
+  { id: 'split', level: 4, group: 'Dividends & share transactions', label: 'Stock split', lineCheck: true, gen(C) {
+    const r = pick([2, 3, 4, 5]), pn = pick([1, 2, 5]), po = pn * r, N = 1000 * rint(10, 500), T = N * po;
+    return {
+      text: `${C} has ${fmt(N)} common shares outstanding with a par value of ${eur(po)} per share (Common Stock: ${eur(T)}). On ${dateStr()}, the board declares a ${r}-for-1 stock split and reduces the par value to ${eur(pn)} per share.`,
+      lines: [Dr(CS, T), Cr(CS, T)], lineCheck: true,
+      noEntryOk: `Correct — because the total par value (${eur(T)}) does not change, a stock split can also be treated as needing no journal entry; only the new number of shares and the new par value are noted. In this course, the split is recorded as a restating entry: debit and credit Common Stock with ${eur(T)} each.`,
+      noEntryHint: 'A stock split changes the number of shares and the par value. Record this in Common Stock: debit it at the old par value and credit it at the new par value.',
+      explain: `After the split, there are ${fmt(N)} × ${r} = ${fmt(N * r)} shares with a par value of ${eur(pn)} each; the total par value stays ${eur(T)}. In this course, the entry replaces Common Stock at the old par value (debit ${eur(T)}, ${fmt(N)} shares × ${eur(po)}) with Common Stock at the new par value (credit ${eur(T)}, ${fmt(N * r)} shares × ${eur(pn)}). Total shareholders' equity does not change. Because nothing changes in total, answering "No entry required" is also accepted.`,
+      hint: 'The total par value does not change: shares × par value before = shares × par value after.',
+    };
+  }},
+  { id: 'treasury', level: 4, group: 'Dividends & share transactions', label: 'Treasury stock: buyback and re-issue (cost method)', gen(C) {
+    const q = 4000 * rint(2, 25), par = pick([1, 2, 5]), pr = par + rint(8, 50), kind = pick(['buy', 'above', 'below']);
+    if (kind === 'buy') return {
+      text: `On ${dateStr()}, ${C} buys back ${fmt(q)} of its own common shares (par value ${eur(par)}) at ${eur(pr)} per share. ${C} uses the cost method for treasury stock.`,
+      lines: [Dr(TREAS, q * pr), Cr(CASH, q * pr)],
+      explain: `Under the cost method, the repurchased shares are recorded at the price paid: ${fmt(q)} × ${eur(pr)} = ${eur(q * pr)}. Treasury Stock is a contra-equity account (debit); Cash decreases (credit). Common Stock and APIC do not change.`,
+      hint: 'Treasury stock is recorded at the total price paid.',
+    };
+    const rq = q * pick([0.25, 0.5, 0.75]), p2 = kind === 'above' ? pr + rint(1, 10) : pr - rint(1, Math.min(8, pr - par - 1));
+    const cost = rq * pr, cashIn = rq * p2, diff = cashIn - cost;
+    return {
+      text: `Earlier this year, ${C} bought back ${fmt(q)} of its own common shares at ${eur(pr)} per share (cost method). On ${dateStr()}, it re-issues ${fmt(rq)} of these treasury shares at ${eur(p2)} per share.${kind === 'below' ? ' Assume that Additional Paid-in Capital is sufficient.' : ''}`,
+      lines: diff > 0 ? [Dr(CASH, cashIn), Cr(TREAS, cost), Cr(APIC, diff)] : [Dr(CASH, cashIn), Dr(APIC, -diff), Cr(TREAS, cost)],
+      explain: `Cash increases by ${fmt(rq)} × ${eur(p2)} = ${eur(cashIn)}. Treasury Stock is reduced at its cost: ${fmt(rq)} × ${eur(pr)} = ${eur(cost)} (credit). The difference of ${eur(Math.abs(diff))} ${diff > 0 ? 'is credited' : 'is debited'} to Additional Paid-in Capital. A company never reports a gain or loss on transactions in its own shares.`,
+      hint: 'Treasury Stock is credited at cost; the difference to the cash received goes to APIC.',
+    };
+  }},
+  { id: 'retire', level: 4, group: 'Dividends & share transactions', label: 'Share buyback: constructive retirement method', gen(C) {
+    const q = 1000 * rint(5, 100), par = pick([1, 2, 5]), oi = par + rint(3, 20), rp = oi + rint(1, 15);
+    return {
+      text: `${C} originally issued its common shares (par value ${eur(par)}) at ${eur(oi)} per share. On ${dateStr()}, it buys back ${fmt(q)} of these shares at ${eur(rp)} per share and retires them immediately (constructive retirement method).`,
+      lines: [Dr(CS, q * par), Dr(APIC, q * (oi - par)), Dr(RE, q * (rp - oi)), Cr(CASH, q * rp)],
+      explain: `Cash paid = ${fmt(q)} × ${eur(rp)} = ${eur(q * rp)}. The original contributions are reversed: Common Stock at par, ${fmt(q)} × ${eur(par)} = ${eur(q * par)}, and APIC, ${fmt(q)} × (${eur(oi)} − ${eur(par)}) = ${eur(q * (oi - par))}. The amount paid above the original issue price, ${fmt(q)} × (${eur(rp)} − ${eur(oi)}) = ${eur(q * (rp - oi))}, reduces Retained Earnings. All three are debits.`,
+      hint: 'Common Stock at par, APIC for the rest of the original issue price, and Retained Earnings for the amount paid above the original issue price.',
+    };
+  }},
+];
+
+TYPES.forEach(t => { t.level = t.level || 1; });
+/* Accounts that may be used as a pass-through (debited and credited within the student's answer) */
+const CLEARING = { closing: [RE], salegoods: [AR], saleserv: [AR], costflow: [AR], deliver: [AR], gift: [AR], bundle: [AR], buyinv: [AP], buynca: [AP], recvgoods: [AP],
+  opex: [AP], prepay: [AP], warruse: [AP], intexp: [INT_PAY, AP], repay: [INT_PAY, AP], bondcoupon: [INT_PAY, AP], bondmature: [INT_PAY, AP], intrev: [INT_REC, AR] };
+TYPES.forEach(t => { if (CLEARING[t.id]) { const g = t.gen; t.clearing = CLEARING[t.id]; t.gen = C => ({ ...g(C), clearing: CLEARING[t.id] }); } });
+const companiesFor = t => COMPANIES.filter(c => !t.fits || t.fits(c));
+
+/* =====================================================================
+   4. GRADING ENGINE — compares the net debit/credit per account
+   ===================================================================== */
+function netMap(lines) {
+  const m = {};
+  for (const [a, side, x] of lines) m[a] = (m[a] || 0) + (side === 'Dr' ? x : -x);
+  for (const a in m) if (Math.abs(m[a]) < 0.005) delete m[a];
+  return m;
+}
+const sideWord = v => v > 0 ? 'debit' : 'credit';
+function sideRule(a, v) {
+  const acc = ACC[a], t = acc.type, incr = (v > 0) === debitIncreases(a);
+  const typeWord = acc.word || (acc.contra
+    ? { Asset: 'a contra-asset account', Liability: 'a contra-liability account', Equity: 'a contra-equity account', Revenue: 'a contra-revenue account' }[t]
+    : { Asset: 'an asset', Liability: 'a liability', Equity: 'an equity account', Revenue: 'a revenue account', Expense: 'an expense account' }[t]);
+  return `${a} is ${typeWord}; in this transaction it ${incr ? 'increases' : 'decreases'}, which is a ${sideWord(v)}.`;
+}
+
+function grade(task, studentLines, claimNoEntry) {
+  if (!task.alternatives) return gradeOne(task, studentLines, claimNoEntry);
+  const sols = [task.lines, ...task.alternatives];
+  for (const sol of sols) { const r = gradeOne({ ...task, lines: sol }, studentLines, claimNoEntry); if (r.ok) return r; }
+  // no accepted version matches: give feedback against the version that shares the most accounts
+  // with the student's entry (the primary solution wins ties)
+  const used = new Set(studentLines.map(l => l[0]));
+  let best = sols[0], bestScore = -1;
+  for (const sol of sols) {
+    const score = [...new Set(sol.map(l => l[0]))].filter(a => used.has(a)).length;
+    if (score > bestScore) { best = sol; bestScore = score; }
+  }
+  return gradeOne({ ...task, lines: best }, studentLines, claimNoEntry);
+}
+function gradeOne(task, studentLines, claimNoEntry) {
+  const msgs = [];
+  if (task.noEntry) {
+    if (claimNoEntry) return { ok: true, msgs: ['Correct — this event does not require a journal entry.'] };
+    return { ok: false, msgs: [task.noEntryHint || 'Does this event change the company\'s assets, liabilities or equity yet? Think about whether anything has been delivered, used or paid.'] };
+  }
+  if (claimNoEntry && task.noEntryOk) return { ok: true, msgs: [task.noEntryOk] };
+  if (claimNoEntry) return { ok: false, msgs: ['This event does change the company\'s financial position, so a journal entry is required.'] };
+  if (studentLines.length === 0) return { ok: false, msgs: ['Enter at least one debit and one credit line.'] };
+
+  const dr = studentLines.filter(l => l[1] === 'Dr').reduce((t, l) => t + l[2], 0);
+  const cr = studentLines.filter(l => l[1] === 'Cr').reduce((t, l) => t + l[2], 0);
+  if (Math.abs(dr - cr) > 0.005) msgs.push(`Your debits (${eur(dr)}) and credits (${eur(cr)}) do not balance. Every journal entry needs debits = credits.`);
+
+  if (task.lineCheck) {
+    // e.g. stock splits: the same account appears on both sides, so compare line by line
+    const key = l => `${l[0]}|${l[1]}|${Math.round(l[2] * 100)}`;
+    const a = task.lines.map(key).sort().join(';'), b = studentLines.map(key).sort().join(';');
+    if (a === b) return { ok: true, msgs: ['Correct — well done!'] };
+    const accs = new Set(task.lines.map(l => l[0]));
+    for (const l of studentLines) if (!accs.has(l[0])) msgs.push(`${l[0]} is not affected by this transaction.`);
+    if (!msgs.length) msgs.push('Record one debit line and one credit line for the accounts involved, each with the total amount (shares × par value).');
+    if (task.hint) msgs.push('Tip: ' + task.hint);
+    return { ok: false, msgs };
+  }
+  const sol = netMap(task.lines), stu = netMap(studentLines);
+  const missing = Object.keys(sol).filter(a => !(a in stu));
+  const extra = Object.keys(stu).filter(a => !(a in sol));
+  const common = Object.keys(sol).filter(a => a in stu);
+
+  // checks on the raw lines, so that offsetting lines cannot slip through the netting
+  const solAccs = new Set(task.lines.map(l => l[0])), rawMsgs = [], clearing = task.clearing || [];
+  for (const a of new Set(studentLines.map(l => l[0]))) {
+    if (!solAccs.has(a)) { if (!(a in stu) && !clearing.includes(a)) rawMsgs.push(`${a} is not affected by this transaction.`); continue; }
+    const stuSides = new Set(studentLines.filter(l => l[0] === a).map(l => l[1]));
+    const solSides = new Set(task.lines.filter(l => l[0] === a).map(l => l[1]));
+    if (stuSides.size === 2 && solSides.size === 1 && !clearing.includes(a))
+      rawMsgs.push(`You used ${a} on both the debit and the credit side. Record each account only once, on the side where it changes, with its full amount.`);
+  }
+
+  // everything reversed?
+  if (!rawMsgs.length && !missing.length && !extra.length && common.length && common.every(a => Math.abs(stu[a] + sol[a]) < 0.005)) {
+    return { ok: false, msgs: ['You picked the correct accounts and amounts, but debits and credits are the wrong way round. Check for each account whether it increases or decreases.'] };
+  }
+
+  let amountIssue = false;
+  for (const a of common) {
+    if (Math.sign(stu[a]) !== Math.sign(sol[a])) msgs.push(`${a} is on the wrong side. ${sideRule(a, sol[a])}`);
+    else if (Math.abs(stu[a] - sol[a]) > 0.005) { amountIssue = true; msgs.push(`${a}: correct account and side, but the amount is ${Math.abs(stu[a]) > Math.abs(sol[a]) ? 'too high' : 'too low'}.`); }
+  }
+  const usedHints = new Set();
+  for (const a of extra) {
+    const h = missing.map(b => CONFUSIONS[`${a}|${b}`]).find(Boolean);
+    msgs.push(`${a} is not affected by this transaction.` + (h && !usedHints.has(h) ? ' ' + h : ''));
+    if (h) usedHints.add(h);
+  }
+  msgs.push(...rawMsgs);
+  if (missing.length) {
+    const n = missing.length;
+    msgs.push(n === 1 ? 'One account that is affected is missing from your entry.' : `${n} accounts that are affected are missing from your entry.`);
+    const LOOK = { Asset: 'asset', Liability: 'liability', Equity: 'equity', Revenue: 'revenue', Expense: 'expense' };
+    const types = [...new Set(missing.map(a => ACC[a].look || LOOK[ACC[a].type]))];
+    msgs.push(`Hint: look among the ${types.length > 1 ? types.slice(0, -1).join(', ') + ' and ' + types[types.length - 1] : types[0]} accounts.`);
+  }
+  if (amountIssue && task.hint) msgs.push('Tip: ' + task.hint);
+  const ok = msgs.length === 0;
+  return { ok, msgs: ok ? ['Correct — well done!'] : msgs };
+}
+
+/* Hint without account names: which kinds of accounts change, and in which direction */
+const PLURAL = { asset: 'assets', liability: 'liabilities', expense: 'expenses' };
+const NUMW = ['no', 'one', 'two', 'three', 'four', 'five', 'six', 'seven'];
+function kindOf(a) {
+  const acc = ACC[a];
+  if (acc.word) return acc.word.replace(/^an? /, '');
+  if (acc.contra) return { Asset: 'contra-asset account', Liability: 'contra-liability account', Equity: 'contra-equity account', Revenue: 'contra-revenue account' }[acc.type];
+  return { Asset: 'asset', Liability: 'liability', Equity: 'equity account', Revenue: 'revenue account', Expense: 'expense' }[acc.type];
+}
+function buildHint(task) {
+  if (task.noEntry) return [task.noEntryHint || 'Ask yourself: has the company\'s financial position (its assets, liabilities or equity) changed at this point? Has anything been delivered, used or paid?'];
+  if (task.lineCheck) return [`The entry has ${NUMW[task.lines.length]} lines, and both use the same equity account.`, ...(task.hint ? ['Tip: ' + task.hint] : [])];
+  const side = (sd, lines) => {
+    const groups = new Map();
+    for (const [a, s] of lines.filter(l => l[1] === sd)) {
+      const up = (s === 'Dr') === debitIncreases(a), k = `${kindOf(a)}|${up ? 'increases' : 'decreases'}`;
+      groups.set(k, (groups.get(k) || 0) + 1);
+    }
+    return [...groups].map(([k, n]) => { const [kind, verb] = k.split('|'); return n === 1 ? `${/^[aeiou]/.test(kind) ? 'an' : 'a'} ${kind} ${verb}` : `${NUMW[n] || n} ${PLURAL[kind] || kind.replace(/account$/, 'accounts')} ${verb === 'increases' ? 'increase' : 'decrease'}`; }).join('; ');
+  };
+  // if alternative solutions exist (e.g. two accepted accounts), describe each variant
+  const sides = sd => [...new Set([task.lines, ...(task.alternatives || [])].map(ls => side(sd, ls)))].join(' — or — ');
+  const n = task.lines.length;
+  return [`The entry has ${NUMW[n] || n} lines.`, `Debit side: ${sides('Dr')}.`, `Credit side: ${sides('Cr')}.`, ...(task.hint ? ['Tip: ' + task.hint] : [])];
+}
+
+/* =====================================================================
+   5. USER INTERFACE
+   ===================================================================== */
+if (typeof document !== 'undefined') {
+  const $ = id => document.getElementById(id);
+  const state = { task: null, type: null, attempts: 0, solved: false, revealed: false, stats: { tasks: 0, solved: 0, first: 0 } };
+
+  // level and topic selectors
+  const sel = $('topic'), lvlSel = $('level');
+  for (const L of LEVELS) { const o = document.createElement('option'); o.value = L.n; o.textContent = L.name; lvlSel.appendChild(o); }
+  const curLevel = () => Number(lvlSel.value);
+  function buildTopics() {
+    const lv = curLevel();
+    sel.innerHTML = `<option value="all">All topics up to Level ${lv} (mixed)</option>`;
+    for (let L = 1; L <= lv; L++) {
+      const groups = [...new Set(TYPES.filter(t => t.level === L).map(t => t.group))];
+      for (const g of groups) {
+        const og = document.createElement('optgroup'); og.label = L === 1 ? g : `Level ${L}: ${g}`;
+        for (const t of TYPES.filter(t => t.level === L && t.group === g)) { const o = document.createElement('option'); o.value = t.id; o.textContent = t.label; og.appendChild(o); }
+        sel.appendChild(og);
+      }
+    }
+    for (const L of [2, 3, 4]) document.querySelectorAll('.rules .lvl' + L).forEach(r => r.style.display = lv >= L ? '' : 'none');
+  }
+  buildTopics();
+
+  function accountSelect() {
+    const s = document.createElement('select');
+    s.setAttribute('aria-label', 'Account');
+    s.innerHTML = '<option value="">— choose account —</option>';
+    const lv = curLevel();
+    for (const type of Object.keys(TYPE_GROUP)) {
+      const og = document.createElement('optgroup'); og.label = groupLabel(type, lv);
+      for (const a of ACCOUNTS.filter(a => a.type === type && a.level <= lv)) { const o = document.createElement('option'); o.value = a.name; o.textContent = a.name; og.appendChild(o); }
+      s.appendChild(og);
+    }
+    return s;
+  }
+  function addRow() {
+    const tr = document.createElement('tr');
+    const td1 = document.createElement('td'); td1.appendChild(accountSelect());
+    const mk = ph => { const td = document.createElement('td'); const i = document.createElement('input'); i.inputMode = 'decimal'; i.placeholder = ph; i.setAttribute('aria-label', ph); td.appendChild(i); return td; };
+    const td4 = document.createElement('td'); const x = document.createElement('button'); x.className = 'link'; x.textContent = '✕'; x.title = 'Remove line'; x.setAttribute('aria-label', 'Remove line');
+    x.onclick = () => { if ($('rows').children.length > 1) tr.remove(); }; td4.appendChild(x);
+    tr.append(td1, mk('Debit'), mk('Credit'), td4);
+    tr.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); check(false); } });
+    $('rows').appendChild(tr);
+  }
+  function parseAmount(s) {
+    s = (s || '').replace(/[€\s ']/g, '');
+    if (!s) return null;
+    const dec = s.match(/[.,](\d{1,2})$/);
+    let int = dec ? s.slice(0, -dec[0].length) : s;
+    int = int.replace(/[.,]/g, '');
+    if (!/^\d+$/.test(int)) return NaN;
+    return Number(int + (dec ? '.' + dec[1] : ''));
+  }
+  function readRows() {
+    const lines = [], errors = [];
+    [...$('rows').children].forEach((tr, i) => {
+      const [s, d, c] = tr.querySelectorAll('select, input');
+      const a = s.value, dv = parseAmount(d.value), cv = parseAmount(c.value);
+      if (!a && dv === null && cv === null) return;
+      const n = i + 1;
+      if (!a) { errors.push(`Line ${n}: choose an account.`); return; }
+      if (Number.isNaN(dv) || Number.isNaN(cv)) { errors.push(`Line ${n}: enter amounts as numbers, e.g. 12,500.`); return; }
+      if (dv !== null && cv !== null) { errors.push(`Line ${n}: enter an amount either as a debit or as a credit, not both.`); return; }
+      if (dv === null && cv === null) { errors.push(`Line ${n}: enter an amount for ${a}.`); return; }
+      const v = dv !== null ? dv : cv;
+      if (v <= 0) { errors.push(`Line ${n}: amounts must be positive.`); return; }
+      lines.push([a, dv !== null ? 'Dr' : 'Cr', v]);
+    });
+    return { lines, errors };
+  }
+  function showFeedback(ok, msgs, title) {
+    const f = $('feedback');
+    f.className = 'feedback show ' + (ok === 'info' ? 'info' : ok ? 'ok' : 'bad');
+    f.innerHTML = `<h3>${title || (ok === true ? 'Correct' : 'Not quite')}</h3>` + (msgs.length ? '<ul>' + msgs.map(m => `<li>${m}</li>`).join('') + '</ul>' : '');
+  }
+  function renderSolution() {
+    const t = state.task, box = $('solution');
+    let html = '<h3>Solution</h3>';
+    if (t.noEntry) html += '<p><b>No journal entry required.</b></p>';
+    else {
+      // keep the generator's order; a debit following a credit starts a new entry (e.g. sale + COGS)
+      html += '<table class="je">' + t.lines.map(([a, s, x], i) => (i > 0 && s === 'Dr' && t.lines[i - 1][1] === 'Cr' ? '<tr><td colspan="3" style="height:10px"></td></tr>' : '') + (s === 'Dr'
+        ? `<tr><td>Dr. ${a}</td><td class="num">${fmt(x)}</td><td></td></tr>`
+        : `<tr><td class="cr">Cr. ${a}</td><td></td><td class="num">${fmt(x)}</td></tr>`)).join('') + '</table>';
+    }
+    html += `<p class="explain">${t.explain}</p><button class="primary" id="btn-next">Next task</button>`;
+    box.innerHTML = html; box.className = 'solution show';
+    $('btn-next').onclick = newTask;
+  }
+  function updateStats() {
+    const s = state.stats;
+    $('stats').textContent = s.tasks ? `Solved ${s.solved} of ${s.tasks} · ${s.first} on first try` : '';
+  }
+  function newTask() {
+    const choice = sel.value;
+    let type;
+    if (choice === 'all') {
+      // mixed mode: each level up to the chosen one gets the same share of tasks;
+      // within Level 1, closing entries and no-entry events appear less often
+      const lv = curLevel(), weighted = [];
+      for (let L = 1; L <= lv; L++) {
+        const ts = TYPES.filter(t => t.level === L);
+        const w = ts.map(t => (L === 1 && (t.id === 'closing' || t.id === 'noentry')) ? 1 : 3), sum = w.reduce((a, b) => a + b, 0);
+        ts.forEach((t, i) => weighted.push([t, w[i] / sum]));
+      }
+      const total = weighted.reduce((a, [, w]) => a + w, 0);
+      do {
+        let r = Math.random() * total; type = weighted[weighted.length - 1][0];
+        for (const [t, w] of weighted) { if ((r -= w) < 0) { type = t; break; } }
+      } while (state.type && type.id === state.type.id && Math.random() < 0.8);
+    } else type = TYPES.find(t => t.id === choice);
+    state.type = type; state.task = type.gen(pick(companiesFor(type)));
+    state.attempts = 0; state.solved = false; state.revealed = false;
+    state.counted = false; updateStats();
+    $('task-meta').textContent = `Level ${type.level} · ${type.group}`;
+    $('task-text').innerHTML = state.task.text;
+    $('rows').innerHTML = ''; addRow(); addRow();
+    $('feedback').className = 'feedback'; $('solution').className = 'solution';
+    setButtons(true);
+    const first = $('rows').querySelector('select'); if (first && window.matchMedia('(pointer:fine)').matches) first.focus({ preventScroll: true });
+  }
+  function setButtons(on) { ['btn-check', 'btn-hint', 'btn-noentry', 'btn-add'].forEach(id => $(id).disabled = !on); }
+  function countTask() { if (!state.counted) { state.counted = true; state.stats.tasks++; updateStats(); } }
+  function check(claimNoEntry) {
+    if (state.solved || state.revealed) return;
+    let lines = [];
+    if (!claimNoEntry) {
+      const r = readRows();
+      if (r.errors.length) { showFeedback(false, r.errors, 'Please complete your entry'); return; }
+      lines = r.lines;
+    }
+    state.attempts++; countTask();
+    const res = grade(state.task, lines, claimNoEntry);
+    showFeedback(res.ok, res.msgs);
+    if (res.ok) {
+      state.solved = true; state.stats.solved++; if (state.attempts === 1) state.stats.first++;
+      updateStats(); setButtons(false); renderSolution();
+    }
+  }
+  $('btn-new').onclick = newTask;
+  $('btn-add').onclick = addRow;
+  $('btn-check').onclick = () => check(false);
+  $('btn-hint').onclick = () => { if (!state.solved && !state.revealed) showFeedback('info', buildHint(state.task), 'Hint'); };
+  $('btn-noentry').onclick = () => check(true);
+  $('btn-solution').onclick = () => { if (!state.solved) { state.revealed = true; countTask(); setButtons(false); } renderSolution(); };
+  sel.onchange = newTask;
+  lvlSel.onchange = () => { buildTopics(); newTask(); };
+  newTask();
+}
+</script>
+</body>
+</html>
