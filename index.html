@@ -669,6 +669,24 @@ const TYPES = [
     };
   }},
 
+  { id: 'gift', group: 'Sales & collections', label: 'Gift cards (sale and redemption)', fits: C => C.retail, gen(C) {
+    if (Math.random() < 0.5) {
+      const n = pick([20, 30, 40, 50, 60, 80, 100]), v = pick([25, 50, 100]), x = n * v;
+      return {
+        text: `During the week ending ${dateStr()}, ${C} sells ${n} gift cards worth ${eur(v)} each for cash in its ${C.premises}. Customers can redeem the cards for merchandise at any time.`,
+        lines: [Dr(CASH, x), Cr(ADV_CUS, x)],
+        explain: `Cash increases by ${n} × ${eur(v)} = ${eur(x)} (debit). Nothing has been delivered yet: the company owes the card holders merchandise worth ${eur(x)}, a liability (Advances from Customers → credit). Revenue is only recognized when a card is redeemed.`,
+      };
+    }
+    const v = pick([25, 50, 100]), s = v + stepRand(20, 600, 10), c = Math.round(s * pick([0.5, 0.55, 0.6, 0.65, 0.7]));
+    return {
+      text: `On ${dateStr()}, a customer buys merchandise (${C.merch}) for ${eur(s)} in ${C}'s ${C.premises}. The customer pays with a gift card worth ${eur(v)}, which ${C} sold last month, and pays the remaining ${eur(s - v)} in cash. The merchandise sold had cost ${C} ${eur(c)}.`,
+      lines: [Dr(CASH, s - v), Dr(ADV_CUS, v), Cr(SALES, s), Dr(COGS, c), Cr(INV, c)],
+      explain: `With the delivery, the full sales price of ${eur(s)} is earned (Sales Revenue → credit). It is paid partly by redeeming the gift card, which settles the obligation recorded when the card was sold (Advances from Customers → debit ${eur(v)}), and partly in cash (debit ${eur(s - v)}). The goods leave Inventory (credit ${eur(c)}) and become Cost of Goods Sold (debit).`,
+      hint: 'Revenue is the full price of the goods; the gift card and the cash together pay for it. Don\'t forget the cost of the goods sold.',
+    };
+  }},
+
   /* ---------- Expenses & interest ---------- */
   { id: 'opex', group: 'Expenses & interest', label: 'Operating expenses (SG&A, R&D)', gen(C) {
     const x = stepRand(500, 60000, 100), d = monthEnd();
@@ -806,25 +824,6 @@ const TYPES = [
       text: `On ${d}, ${C} ${ev}.`,
       lines: [], noEntry: true,
       explain: `No journal entry is required. The company's assets, liabilities and equity have not changed yet: signing a contract that neither side has started to perform, receiving a quote, or expecting a deal does not create an asset or a liability. An entry is needed once one side performs (goods or services are delivered, or cash is paid) or once an event or period-end estimate changes an asset, a liability or equity.`,
-    };
-  }},
-
-  /* =================== LEVEL 1 additions =================== */
-  { id: 'gift', level: 1, group: 'Sales & collections', label: 'Gift cards (sale and redemption)', fits: C => C.retail, gen(C) {
-    if (Math.random() < 0.5) {
-      const n = pick([20, 30, 40, 50, 60, 80, 100]), v = pick([25, 50, 100]), x = n * v;
-      return {
-        text: `During the week ending ${dateStr()}, ${C} sells ${n} gift cards worth ${eur(v)} each for cash in its ${C.premises}. Customers can redeem the cards for merchandise at any time.`,
-        lines: [Dr(CASH, x), Cr(ADV_CUS, x)],
-        explain: `Cash increases by ${n} × ${eur(v)} = ${eur(x)} (debit). Nothing has been delivered yet: the company owes the card holders merchandise worth ${eur(x)}, a liability (Advances from Customers → credit). Revenue is only recognized when a card is redeemed.`,
-      };
-    }
-    const v = pick([25, 50, 100]), s = v + stepRand(20, 600, 10), c = Math.round(s * pick([0.5, 0.55, 0.6, 0.65, 0.7]));
-    return {
-      text: `On ${dateStr()}, a customer buys merchandise (${C.merch}) for ${eur(s)} in ${C}'s ${C.premises}. The customer pays with a gift card worth ${eur(v)}, which ${C} sold last month, and pays the remaining ${eur(s - v)} in cash. The merchandise sold had cost ${C} ${eur(c)}.`,
-      lines: [Dr(CASH, s - v), Dr(ADV_CUS, v), Cr(SALES, s), Dr(COGS, c), Cr(INV, c)],
-      explain: `With the delivery, the full sales price of ${eur(s)} is earned (Sales Revenue → credit). It is paid partly by redeeming the gift card, which settles the obligation recorded when the card was sold (Advances from Customers → debit ${eur(v)}), and partly in cash (debit ${eur(s - v)}). The goods leave Inventory (credit ${eur(c)}) and become Cost of Goods Sold (debit).`,
-      hint: 'Revenue is the full price of the goods; the gift card and the cash together pay for it. Don\'t forget the cost of the goods sold.',
     };
   }},
 
@@ -1308,7 +1307,7 @@ function buildHint(task) {
 /* =====================================================================
    5. USER INTERFACE
    ===================================================================== */
-if (typeof document !== 'undefined') {
+{
   const $ = id => document.getElementById(id);
   const state = { task: null, type: null, attempts: 0, solved: false, revealed: false, stats: { tasks: 0, solved: 0, first: 0 } };
 
