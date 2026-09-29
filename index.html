@@ -43,6 +43,7 @@ button:disabled { opacity: .5; cursor: default; }
 .task-text { font-size: 1.08rem; }
 .task-text table { border-collapse: collapse; margin: 10px 0 4px; }
 .task-text td { padding: 3px 14px 3px 0; }
+.books-note { color: var(--muted); font-size: .88rem; margin: 10px 0 0; }
 .task-text td.num { text-align: right; font-variant-numeric: tabular-nums; }
 table.entry { width: 100%; border-collapse: collapse; margin-top: 14px; }
 table.entry th { text-align: left; font-size: .85rem; color: var(--muted); font-weight: 600; padding: 4px 6px; border-bottom: 1px solid var(--line); }
@@ -122,6 +123,7 @@ header .byline { font-size: .9rem; margin-top: 2px; }
   <div class="card" id="task-card">
     <div class="task-meta" id="task-meta"></div>
     <div class="task-text" id="task-text"></div>
+    <p class="books-note">All entries are recorded in the books of the company named in the task.</p>
 
     <table class="entry" aria-label="Journal entry">
       <thead><tr><th>Account</th><th class="col-amt">Debit (€)</th><th class="col-amt">Credit (€)</th><th class="col-x"></th></tr></thead>
@@ -436,6 +438,8 @@ const randDate = (mFrom = 0, mTo = 11) => { const m = rint(mFrom, mTo); return {
 const dateStr = () => randDate().str;
 const MONTH_DAYS = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 /* last day of a random month — for payments that close a period (interest, monthly expenses) */
+const rec = (what, d) => ` Record the journal entry for ${what} on ${d}.`;
+const ANY = ' Record any entry required.';
 const monthEnd = () => { const m = rint(0, 11); return `${MONTHS[m]} ${MONTH_DAYS[m]}`; };
 const Dr = (a, x) => [a, 'Dr', x];
 const Cr = (a, x) => [a, 'Cr', x];
@@ -481,8 +485,9 @@ const TYPES = [
     const cash = shares * price, cs = shares * par, apic = cash - cs;
     const lines = [Dr(CASH, cash), Cr(CS, cs)];
     if (apic > 0) lines.push(Cr(APIC, apic));
+    const d = dateStr();
     return {
-      text: `On ${dateStr()}, ${C} issues ${fmt(shares)} shares of ${eur(par)} par value common stock for ${eur(price)} per share in cash.`,
+      text: `On ${d}, ${C} issues ${fmt(shares)} shares of ${eur(par)} par value common stock for ${eur(price)} per share in cash.${rec('the share issue', d)}`,
       lines,
       explain: `The company receives ${eur(cash)} in cash (asset increases → debit). Shareholders' equity increases (credit). ` +
         (apic > 0 ? `The par value (${fmt(shares)} × ${eur(par)} = ${eur(cs)}) goes to Common Stock; the excess of ${eur(apic)} goes to Additional Paid-in Capital.`
@@ -491,10 +496,10 @@ const TYPES = [
     };
   }},
   { id: 'loan', group: 'Equity & financing', label: 'Take out a bank loan', gen(C) {
-    const x = stepRand(20000, 500000, 5000), n = rint(3, 10);
+    const x = stepRand(20000, 500000, 5000), n = rint(3, 10), d = dateStr();
     return {
-      text: pick([`On ${dateStr()}, ${C} takes out ${an(n)} ${n}-year bank loan of ${eur(x)}. The bank transfers the amount to ${C}'s bank account. Interest is paid annually; the full amount is repaid at the end of the term.`,
-                  `On ${dateStr()}, ${C} borrows ${eur(x)} from its bank for a term of ${n} years. The money is paid into ${C}'s bank account. Interest is paid annually; the full amount is repaid at the end of the term.`]),
+      text: pick([`On ${d}, ${C} takes out ${an(n)} ${n}-year bank loan of ${eur(x)}. The bank transfers the amount to ${C}'s bank account. Interest is paid annually; the full amount is repaid at the end of the term.`,
+                  `On ${d}, ${C} borrows ${eur(x)} from its bank for a term of ${n} years. The money is paid into ${C}'s bank account. Interest is paid annually; the full amount is repaid at the end of the term.`]) + rec('the loan', d),
       lines: [Dr(CASH, x), Cr(LOAN, x)],
       explain: `Cash increases (asset → debit) and the company now owes the bank ${eur(x)} (liability increases → credit). A loan is not revenue: the money has to be repaid.`,
     };
@@ -504,8 +509,8 @@ const TYPES = [
     const P = roundTo(L * pick([0.1, 0.2, 0.25, 0.5]), 1000);
     const computed = Math.random() < 0.5;
     const text = computed
-      ? `${C} has a bank loan with an outstanding balance of ${eur(L)} at an interest rate of ${r}% p.a. The loan is repaid in annual installments of ${eur(P)}, and interest on the outstanding balance is paid once a year. On December 31 (the end of ${C}'s fiscal year), ${C} pays this year's installment together with the interest for the past 12 months by bank transfer.`
-      : `${C}'s bank loan is repaid in annual installments. On December 31 (the end of ${C}'s fiscal year), ${C} pays this year's installment of ${eur(P)} together with ${eur(I)} of interest for the past year by bank transfer.`;
+      ? `${C} has a bank loan with an outstanding balance of ${eur(L)} at an interest rate of ${r}% p.a. The loan is repaid in annual installments of ${eur(P)}, and interest on the outstanding balance is paid once a year. On December 31 (the end of ${C}'s fiscal year), ${C} pays this year's installment together with the interest for the past 12 months by bank transfer.${rec('the payment', 'December 31')}`
+      : `${C}'s bank loan is repaid in annual installments. On December 31 (the end of ${C}'s fiscal year), ${C} pays this year's installment of ${eur(P)} together with ${eur(I)} of interest for the past year by bank transfer.${rec('the payment', 'December 31')}`;
     return {
       text,
       lines: [Dr(LOAN, P), Dr(INT_EXP, I), Cr(CASH, P + I)],
@@ -520,19 +525,19 @@ const TYPES = [
     const x = stepRand(4000, 80000, 500), mode = pick(['cash', 'account', 'account', 'mixed']);
     const d = dateStr();
     if (mode === 'cash') return {
-      text: `On ${d}, ${C} purchases merchandise (${C.merch}) for ${eur(x)} and pays immediately by bank transfer.`,
+      text: `On ${d}, ${C} purchases merchandise (${C.merch}) for ${eur(x)} and pays immediately by bank transfer.${rec('the purchase', d)}`,
       lines: [Dr(INV, x), Cr(CASH, x)],
       explain: `Inventory increases (asset → debit) and Cash decreases (asset → credit). This is an asset swap.`,
     };
     if (mode === 'account') return {
-      text: pick([`On ${d}, ${C} purchases merchandise (${C.merch}) costing ${eur(x)} from a supplier, agreeing to pay within 30 days.`,
-                  `On ${d}, ${C} receives a delivery of merchandise (${C.merch}) together with the supplier's invoice for ${eur(x)}, payable within 30 days.`]),
+      text: pick([`On ${d}, ${C} purchases merchandise (${C.merch}) costing ${eur(x)} from a supplier, agreeing to pay within 30 days.${rec('the purchase', d)}`,
+                  `On ${d}, ${C} receives a delivery of merchandise (${C.merch}) together with the supplier's invoice for ${eur(x)}, payable within 30 days.${rec('the purchase', d)}`]),
       lines: [Dr(INV, x), Cr(AP, x)],
       explain: `Inventory increases (asset → debit). The promise to pay later increases Accounts Payable (liability → credit).`,
     };
     const p = roundTo(x * pick([0.2, 0.3, 0.4, 0.5]), 500);
     return {
-      text: `On ${d}, ${C} purchases merchandise (${C.merch}) costing ${eur(x)}. It pays ${eur(p)} immediately in cash; the rest is due in 60 days.`,
+      text: `On ${d}, ${C} purchases merchandise (${C.merch}) costing ${eur(x)}. It pays ${eur(p)} immediately in cash; the rest is due in 60 days.${rec('the purchase', d)}`,
       lines: [Dr(INV, x), Cr(CASH, p), Cr(AP, x - p)],
       explain: `Inventory increases by the full cost of ${eur(x)} (debit). ${eur(p)} is paid in cash (credit Cash) and the remaining ${eur(x - p)} is owed to the supplier (credit Accounts Payable).`,
       hint: 'The cash part and the part still owed together must equal the total price.',
@@ -554,7 +559,7 @@ const TYPES = [
     const mode = pick(modes), p = roundTo(x * pick([0.2, 0.25, 0.3, 0.4, 0.5]), a.s);
     const intro = `On ${d}, ${C} acquires ${desc} for ${eur(x)}.`;
     const inc = `${a.acct} increases by ${eur(x)} (asset → debit).`;
-    switch (mode) {
+    const res = (() => { switch (mode) {
       case 'cash': return { text: `${intro} It pays the full amount by bank transfer.`, lines: [Dr(a.acct, x), Cr(CASH, x)],
         explain: `${inc} Cash decreases by the same amount (credit). This is an asset swap.` };
       case 'loan': return { text: `${intro} The purchase is financed entirely by ${an(n)} ${n}-year bank loan (repayable in full at the end of the term); the bank pays the seller directly.`, lines: [Dr(a.acct, x), Cr(LOAN, x)],
@@ -569,14 +574,16 @@ const TYPES = [
         lines: [Dr(a.acct, x), Cr(CASH, p), Cr(AP, x - p)],
         explain: `${inc} Cash decreases by ${eur(p)} (credit) and the remaining ${eur(x - p)} is owed to the seller (Accounts Payable → credit).`,
         hint: 'The cash part and the part still owed together must equal the total price.' };
-    }
+    } })();
+    res.text += rec('the acquisition', d);
+    return res;
   }},
   { id: 'paysup', group: 'Purchases & payments', label: 'Pay a supplier', gen(C) {
-    const o = stepRand(5000, 60000, 1000), full = Math.random() < 0.5, p = full ? o : roundTo(o * pick([0.25, 0.4, 0.5, 0.6]), 500);
+    const o = stepRand(5000, 60000, 1000), full = Math.random() < 0.5, p = full ? o : roundTo(o * pick([0.25, 0.4, 0.5, 0.6]), 500), d = dateStr();
     return {
-      text: full && Math.random() < 0.5
-        ? `On ${dateStr()}, ${C} pays a supplier invoice of ${eur(o)} in full by bank transfer. The invoice is for merchandise delivered last month.`
-        : `On ${dateStr()}, ${C} transfers ${eur(p)} to a supplier. The payment settles ${full ? 'the full amount' : 'part'} of the ${eur(o)} it owes on a supplier invoice for merchandise delivered last month.`,
+      text: (full && Math.random() < 0.5
+        ? `On ${d}, ${C} pays a supplier invoice of ${eur(o)} in full by bank transfer. The invoice is for merchandise delivered last month.`
+        : `On ${d}, ${C} transfers ${eur(p)} to a supplier. The payment settles ${full ? 'the full amount' : 'part'} of the ${eur(o)} it owes on a supplier invoice for merchandise delivered last month.`) + rec('the payment', d),
       lines: [Dr(AP, p), Cr(CASH, p)],
       explain: `The liability to the supplier decreases (Accounts Payable → debit) and Cash decreases (credit). No expense arises: the inventory was already recorded when it was bought.`,
     };
@@ -585,23 +592,23 @@ const TYPES = [
     const kind = pick(['rent', 'insurance', 'goods']), d = randDate(0, 10), start = `${MONTHS[d.m + 1]} 1`;
     if (kind === 'goods') {
       const x = stepRand(2000, 50000, 500);
-      return { text: `On ${d.str}, ${C} pays ${eur(x)} in advance to a supplier for merchandise (${C.merch}) that will be delivered next month.`,
+      return { text: `On ${d.str}, ${C} pays ${eur(x)} in advance to a supplier for merchandise (${C.merch}) that will be delivered next month.${rec('the payment', d.str)}`,
         lines: [Dr(ADV_SUP, x), Cr(CASH, x)],
         explain: `The goods have not been received yet, so Inventory is not affected. The company has a claim on the supplier to deliver goods — an asset (Advances to Suppliers → debit). Cash decreases (credit).` };
     }
     const n = kind === 'rent' ? pick([3, 6, 12]) : pick([6, 12]), x = n * stepRand(300, 4000, 100);
     const acct = kind === 'rent' ? PRE_RENT : PRE_INS;
-    return { text: kind === 'rent'
+    return { text: (kind === 'rent'
         ? `On ${d.str}, ${C} pays ${eur(x)} in cash for ${n} months of ${C.premises} rent in advance (rental period starting ${start}).`
-        : `On ${d.str}, ${C} pays the premium of ${eur(x)} in cash for a ${n}-month fire insurance policy starting on ${start}.`,
+        : `On ${d.str}, ${C} pays the premium of ${eur(x)} in cash for a ${n}-month fire insurance policy starting on ${start}.`) + rec('the payment', d.str),
       lines: [Dr(acct, x), Cr(CASH, x)],
       explain: `The payment covers future periods, so it is not an expense yet. It is recorded as an asset (${acct} → debit); Cash decreases (credit). The expense is recognized later, as time passes.` };
   }},
   { id: 'recvgoods', group: 'Purchases & payments', label: 'Receive goods paid in advance', gen(C) {
-    const x = stepRand(2000, 40000, 500), full = Math.random() < 0.5, y = full ? x : x + stepRand(1000, 30000, 500);
+    const x = stepRand(2000, 40000, 500), full = Math.random() < 0.5, y = full ? x : x + stepRand(1000, 30000, 500), d = dateStr();
     return {
-      text: `Last month, ${C} paid ${eur(x)} in advance to a supplier for merchandise (${C.merch}). On ${dateStr()}, the merchandise is delivered. ` +
-        (full ? 'The advance payment covers the full price.' : `The total price is ${eur(y)}; the remaining ${eur(y - x)} is due in 30 days.`),
+      text: `Last month, ${C} paid ${eur(x)} in advance to a supplier for merchandise (${C.merch}). On ${d}, the merchandise is delivered. ` +
+        (full ? 'The advance payment covers the full price.' : `The total price is ${eur(y)}; the remaining ${eur(y - x)} is due in 30 days.`) + rec('the delivery', d),
       lines: full ? [Dr(INV, x), Cr(ADV_SUP, x)] : [Dr(INV, y), Cr(ADV_SUP, x), Cr(AP, y - x)],
       explain: `The goods are now received, so Inventory increases by their full price of ${eur(y)} (debit). The claim on the supplier is used up (Advances to Suppliers → credit ${eur(x)})` +
         (full ? '.' : `, and the remaining ${eur(y - x)} is owed (Accounts Payable → credit).`),
@@ -612,7 +619,7 @@ const TYPES = [
   { id: 'salegoods', group: 'Sales & collections', label: 'Sell goods', gen(C) {
     const s = stepRand(2000, 90000, 500), c = roundTo(s * pick([0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75]), 100);
     const mode = pick(['cash', 'account', 'account', 'mixed']), d = dateStr();
-    const cost = ` The merchandise sold had cost ${C} ${eur(c)}.`;
+    const cost = ` The merchandise sold had cost ${C} ${eur(c)}.${rec('the sale', d)}`;
     const cogs = [Dr(COGS, c), Cr(INV, c)];
     const tail = ` At the same time, the goods leave Inventory (credit ${eur(c)}) and their cost becomes an expense (Cost of Goods Sold → debit).`;
     if (mode === 'cash') return { text: `On ${d}, ${C} sells merchandise (${C.merch}) for ${eur(s)} in cash.${cost}`,
@@ -629,9 +636,9 @@ const TYPES = [
       hint: 'Revenue is the full sales price; the cash part and the part still owed together must equal it. Don\'t forget the cost of the goods sold.' };
   }},
   { id: 'saleserv', group: 'Sales & collections', label: 'Sell services', gen(C) {
-    const [svc, lo, hi] = pick(C.services), x = stepRand(lo, hi, lo < 1000 ? 10 : 100), cash = Math.random() < 0.5;
+    const [svc, lo, hi] = pick(C.services), x = stepRand(lo, hi, lo < 1000 ? 10 : 100), cash = Math.random() < 0.5, d = dateStr();
     return {
-      text: `On ${dateStr()}, ${C} ${svc} and ${cash ? `receives ${eur(x)} in cash` : `sends an invoice for ${eur(x)}, payable within 30 days`}.`,
+      text: `On ${d}, ${C} ${svc} and ${cash ? `receives ${eur(x)} in cash` : `sends an invoice for ${eur(x)}, payable within 30 days`}.${rec('the service provided', d)}`,
       lines: [Dr(cash ? CASH : AR, x), Cr(SALES, x)],
       explain: `The service has been delivered, so revenue is earned (Sales Revenue → credit). ${cash ? 'Cash increases (debit).' : 'The customer owes the amount (Accounts Receivable → debit).'} There is no Cost of Goods Sold because no merchandise leaves Inventory.`,
     };
@@ -640,8 +647,8 @@ const TYPES = [
     const d = randDate(0, 10), goods = Math.random() < 0.5;
     const n = pick([3, 6, 12]), x = goods ? stepRand(2000, 60000, 1000) : n * stepRand(100, 2000, 50);
     return {
-      text: goods ? `On ${d.str}, ${C} receives ${eur(x)} in cash from a customer as an advance payment for merchandise (${C.merch}) to be delivered in two months.`
-                  : `On ${d.str}, ${C} receives ${eur(x)} in cash for a ${n}-month ${C.contract}, starting on ${MONTHS[d.m + 1]} 1.`,
+      text: goods ? `On ${d.str}, ${C} receives ${eur(x)} in cash from a customer as an advance payment for merchandise (${C.merch}) to be delivered in two months.${rec('the payment received', d.str)}`
+                  : `On ${d.str}, ${C} receives ${eur(x)} in cash for a ${n}-month ${C.contract}, starting on ${MONTHS[d.m + 1]} 1.${rec('the payment received', d.str)}`,
       lines: [Dr(CASH, x), Cr(ADV_CUS, x)],
       explain: `Cash increases (debit). Nothing has been delivered yet, so no revenue is earned. Instead, the company owes the customer ${goods ? 'goods' : 'services'} (Advances from Customers → credit), a liability.`,
     };
@@ -659,31 +666,13 @@ const TYPES = [
     };
   }},
   { id: 'collect', group: 'Sales & collections', label: 'Collect a receivable', gen(C) {
-    const o = stepRand(3000, 80000, 1000), full = Math.random() < 0.6, p = full ? o : roundTo(o * pick([0.25, 0.4, 0.5]), 500);
+    const o = stepRand(3000, 80000, 1000), full = Math.random() < 0.6, p = full ? o : roundTo(o * pick([0.25, 0.4, 0.5]), 500), d = dateStr();
     return {
-      text: full ? pick([`On ${dateStr()}, a customer transfers ${eur(p)} to ${C} to settle an invoice for merchandise delivered last month.`,
-                         `On ${dateStr()}, ${C} receives a bank transfer of ${eur(p)} from a customer, settling an invoice for merchandise delivered last month.`])
-                 : `On ${dateStr()}, a customer transfers ${eur(p)} to ${C} as partial payment of an invoice of ${eur(o)} for merchandise delivered last month.`,
+      text: (full ? pick([`On ${d}, a customer transfers ${eur(p)} to ${C} to settle an invoice for merchandise delivered last month.`,
+                         `On ${d}, ${C} receives a bank transfer of ${eur(p)} from a customer, settling an invoice for merchandise delivered last month.`])
+                 : `On ${d}, a customer transfers ${eur(p)} to ${C} as partial payment of an invoice of ${eur(o)} for merchandise delivered last month.`) + rec('the payment received', d),
       lines: [Dr(CASH, p), Cr(AR, p)],
       explain: `Cash increases (debit) and the claim on the customer decreases (Accounts Receivable → credit). No revenue is recorded now: it was already recognized at the time of the sale.`,
-    };
-  }},
-
-  { id: 'gift', group: 'Sales & collections', label: 'Gift cards (sale and redemption)', fits: C => C.retail, gen(C) {
-    if (Math.random() < 0.5) {
-      const n = pick([20, 30, 40, 50, 60, 80, 100]), v = pick([25, 50, 100]), x = n * v;
-      return {
-        text: `During the week ending ${dateStr()}, ${C} sells ${n} gift cards worth ${eur(v)} each for cash in its ${C.premises}. Customers can redeem the cards for merchandise at any time.`,
-        lines: [Dr(CASH, x), Cr(ADV_CUS, x)],
-        explain: `Cash increases by ${n} × ${eur(v)} = ${eur(x)} (debit). Nothing has been delivered yet: the company owes the card holders merchandise worth ${eur(x)}, a liability (Advances from Customers → credit). Revenue is only recognized when a card is redeemed.`,
-      };
-    }
-    const v = pick([25, 50, 100]), s = v + stepRand(20, 600, 10), c = Math.round(s * pick([0.5, 0.55, 0.6, 0.65, 0.7]));
-    return {
-      text: `On ${dateStr()}, a customer buys merchandise (${C.merch}) for ${eur(s)} in ${C}'s ${C.premises}. The customer pays with a gift card worth ${eur(v)}, which ${C} sold last month, and pays the remaining ${eur(s - v)} in cash. The merchandise sold had cost ${C} ${eur(c)}.`,
-      lines: [Dr(CASH, s - v), Dr(ADV_CUS, v), Cr(SALES, s), Dr(COGS, c), Cr(INV, c)],
-      explain: `With the delivery, the full sales price of ${eur(s)} is earned (Sales Revenue → credit). It is paid partly by redeeming the gift card, which settles the obligation recorded when the card was sold (Advances from Customers → debit ${eur(v)}), and partly in cash (debit ${eur(s - v)}). The goods leave Inventory (credit ${eur(c)}) and become Cost of Goods Sold (debit).`,
-      hint: 'Revenue is the full price of the goods; the gift card and the cash together pay for it. Don\'t forget the cost of the goods sold.',
     };
   }},
 
@@ -713,7 +702,7 @@ const TYPES = [
       };
     }
     return {
-      text: `On ${d}, ${C} ${it.t}.`,
+      text: `On ${d}, ${C} ${it.t}.${rec(it.pay === 'cash' ? 'the payment' : 'the invoice received', d)}`,
       lines: [Dr(it.a, x), Cr(it.pay === 'cash' ? CASH : AP, x)],
       explain: `The resources were used up this period, so this is an expense (${it.a} → debit, a ${why}). ` +
         (it.pay === 'cash' ? 'Cash decreases (credit).' : 'It is not paid yet, so the company owes the amount (Accounts Payable → credit).'),
@@ -722,9 +711,9 @@ const TYPES = [
   { id: 'intexp', group: 'Expenses & interest', label: 'Interest expense (paid or accrued)', gen(C) {
     const k = rint(3, 30), L = 12000 * k, r = rint(3, 9), yrs = rint(3, 10);
     if (Math.random() < 0.5) {
-      const I = L * r / 400;
+      const I = L * r / 400, dq = pick(['March 31', 'June 30', 'September 30', 'December 31']);
       return {
-        text: `On ${pick(['March 31', 'June 30', 'September 30', 'December 31'])}, ${C} pays the quarterly interest on its ${eur(L)} bank loan by bank transfer. The loan has a term of ${yrs} years and an interest rate of ${r}% p.a.; interest is paid quarterly, and the full amount is repaid at the end of the term.`,
+        text: `On ${dq}, ${C} pays the quarterly interest on its ${eur(L)} bank loan by bank transfer. The loan has a term of ${yrs} years and an interest rate of ${r}% p.a.; interest is paid quarterly, and the full amount is repaid at the end of the term.${rec('the interest payment', dq)}`,
         lines: [Dr(INT_EXP, I), Cr(CASH, I)],
         explain: `Interest for one quarter = ${eur(L)} × ${r}% × 3/12 = ${eur(I)}. It is the cost of using borrowed funds (Interest Expense → debit); Cash decreases (credit). The loan itself is unchanged.`,
         hint: 'Interest = loan amount × annual interest rate × months / 12.',
@@ -744,7 +733,7 @@ const TYPES = [
     if (Math.random() < 0.5) {
       const I = dep * r / 100;
       return {
-        text: `On December 31 (the end of ${C}'s fiscal year), ${C}'s bank credits ${eur(I)} of interest to ${C}'s bank account for a fixed-term deposit held during the past year.`,
+        text: `On December 31 (the end of ${C}'s fiscal year), ${C}'s bank credits ${eur(I)} of interest to ${C}'s bank account for a fixed-term deposit held during the past year.${rec('the interest received', 'December 31')}`,
         lines: [Dr(CASH, I), Cr(INT_REV, I)],
         explain: `Cash increases (debit). The interest is income earned on money the company has invested (Interest Revenue → credit).`,
       };
@@ -821,9 +810,30 @@ const TYPES = [
       `expects to win a contract worth ${eur(x)} with a new client; the contract is scheduled to be signed next month`,
     ]);
     return {
-      text: `On ${d}, ${C} ${ev}.`,
+      text: `On ${d}, ${C} ${ev}.${ANY}`,
       lines: [], noEntry: true,
       explain: `No journal entry is required. The company's assets, liabilities and equity have not changed yet: signing a contract that neither side has started to perform, receiving a quote, or expecting a deal does not create an asset or a liability. An entry is needed once one side performs (goods or services are delivered, or cash is paid) or once an event or period-end estimate changes an asset, a liability or equity.`,
+    };
+  }},
+
+  /* =================== LEVEL 1 additions =================== */
+  { id: 'gift', level: 1, group: 'Sales & collections', label: 'Gift cards (sale and redemption)', fits: C => C.retail, gen(C) {
+    if (Math.random() < 0.5) {
+      const n = pick([20, 30, 40, 50, 60, 80, 100]), v = pick([25, 50, 100]), x = n * v;
+      const dw = dateStr();
+      return {
+        text: `During the week ending ${dw}, ${C} sells ${n} gift cards worth ${eur(v)} each for cash in its ${C.premises}. Customers can redeem the cards for merchandise at any time. Record the journal entry for the week's gift card sales.`,
+        lines: [Dr(CASH, x), Cr(ADV_CUS, x)],
+        explain: `Cash increases by ${n} × ${eur(v)} = ${eur(x)} (debit). Nothing has been delivered yet: the company owes the card holders merchandise worth ${eur(x)}, a liability (Advances from Customers → credit). Revenue is only recognized when a card is redeemed.`,
+      };
+    }
+    const v = pick([25, 50, 100]), s = v + stepRand(20, 600, 10), c = Math.round(s * pick([0.5, 0.55, 0.6, 0.65, 0.7]));
+    const d = dateStr();
+    return {
+      text: `On ${d}, a customer buys merchandise (${C.merch}) for ${eur(s)} in ${C}'s ${C.premises}. The customer pays with a gift card worth ${eur(v)}, which ${C} sold last month, and pays the remaining ${eur(s - v)} in cash. The merchandise sold had cost ${C} ${eur(c)}.${rec('the sale', d)}`,
+      lines: [Dr(CASH, s - v), Dr(ADV_CUS, v), Cr(SALES, s), Dr(COGS, c), Cr(INV, c)],
+      explain: `With the delivery, the full sales price of ${eur(s)} is earned (Sales Revenue → credit). It is paid partly by redeeming the gift card, which settles the obligation recorded when the card was sold (Advances from Customers → debit ${eur(v)}), and partly in cash (debit ${eur(s - v)}). The goods leave Inventory (credit ${eur(c)}) and become Cost of Goods Sold (debit).`,
+      hint: 'Revenue is the full price of the goods; the gift card and the cash together pay for it. Don\'t forget the cost of the goods sold.',
     };
   }},
 
@@ -909,9 +919,9 @@ const TYPES = [
     }
   }},
   { id: 'writeoff', level: 2, group: 'Receivables & returns', label: 'Write off an uncollectible account', gen(C) {
-    const x = stepRand(500, 25000, 100);
+    const x = stepRand(500, 25000, 100), d = dateStr();
     return {
-      text: `On ${dateStr()}, ${C} learns that a customer who owes ${eur(x)} for merchandise bought last year has gone bankrupt and will not pay. ${C} uses the allowance method and writes off the receivable.`,
+      text: `On ${d}, ${C} learns that a customer who owes ${eur(x)} for merchandise bought last year has gone bankrupt and will not pay. ${C} uses the allowance method and writes off the receivable.${rec('the write-off', d)}`,
       lines: [Dr(ALLOW, x), Cr(AR, x)],
       explain: `The receivable is removed (Accounts Receivable → credit) and the allowance set up for exactly such cases is used up (Allowance for Doubtful Accounts → debit). No expense arises now: the expected loss was already recorded as Bad Debt Expense when the allowance was estimated. Net receivables do not change.`,
     };
@@ -998,11 +1008,11 @@ const TYPES = [
     };
   }},
   { id: 'warruse', level: 3, group: 'Warranties', label: 'Warranties: repairs carried out', fits: C => C.warranty, gen(C) {
-    const x = stepRand(200, 30000, 100), parts = Math.random() < 0.5;
+    const x = stepRand(200, 30000, 100), parts = Math.random() < 0.5, d = dateStr();
     return {
-      text: parts
-        ? `On ${dateStr()}, ${C} repairs ${C.warranty.goods} brought in by customers under warranty, using spare parts from its own inventory that cost ${eur(x)}. The warranty liability was recorded when the goods were sold.`
-        : `On ${dateStr()}, ${C} pays an external repair shop ${eur(x)} by bank transfer for warranty repairs on ${C.warranty.goods} sold last year. The warranty liability was recorded when the goods were sold.`,
+      text: (parts
+        ? `On ${d}, ${C} repairs ${C.warranty.goods} brought in by customers under warranty, using spare parts from its own inventory that cost ${eur(x)}. The warranty liability was recorded when the goods were sold.`
+        : `On ${d}, ${C} pays an external repair shop ${eur(x)} by bank transfer for warranty repairs on ${C.warranty.goods} sold last year. The warranty liability was recorded when the goods were sold.`) + rec(parts ? 'the repairs' : 'the payment', d),
       lines: [Dr(WAR_LIAB, x), Cr(parts ? INV : CASH, x)],
       explain: `The repairs fulfil part of the warranty obligation, so the liability decreases (Warranty Liability → debit). ${parts ? 'The spare parts leave Inventory' : 'Cash decreases'} (credit). No expense arises now: the expense was already recognized as Warranty Expense in the period of the sale.`,
     };
@@ -1056,8 +1066,9 @@ const TYPES = [
       const a = ncAsset(C), A = stepRand(Math.max(a.min, 10000), a.max, 1000), AD = roundTo(A * pick([0.3, 0.4, 0.5, 0.6, 0.7]), 1000), BV = A - AD;
       const P = roundTo(BV * pick([1.1, 1.2, 1.3, 1.5]), 1000), g = P - BV;
       if (BV <= 0 || g <= 0) continue;
+      const d = dateStr();
       return {
-        text: `On ${dateStr()}, ${C} sells ${theForm(a.desc)} for ${eur(P)}, received by bank transfer. Original cost: ${eur(A)}; accumulated depreciation up to the date of sale (already recorded): ${eur(AD)}.`,
+        text: `On ${d}, ${C} sells ${theForm(a.desc)} for ${eur(P)}, received by bank transfer. Original cost: ${eur(A)}; accumulated depreciation up to the date of sale (already recorded): ${eur(AD)}.${rec('the sale', d)}`,
         lines: [Dr(CASH, P), Dr(ACC_DEP, AD), Cr(a.acct, A), Cr(GAIN, g)],
         explain: `Book value = ${eur(A)} − ${eur(AD)} = ${eur(BV)}. The asset is removed at its original cost (${a.acct} → credit ${eur(A)}) together with its accumulated depreciation (debit ${eur(AD)}); Cash increases by ${eur(P)}. The difference, ${eur(P)} − ${eur(BV)} = ${eur(g)}, is a gain (Gain on Sale of Assets → credit).`,
         hint: 'Gain = sales price − book value (cost − accumulated depreciation).',
@@ -1099,33 +1110,33 @@ const TYPES = [
   { id: 'bondmature', level: 4, group: 'Bonds', label: 'Repayment at maturity', gen(C) {
     const F = 100000 * rint(5, 50), c = rint(3, 8), n = rint(5, 10), I = F * c / 100;
     return {
-      text: `${['Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten'][n - 5]} years ago, ${C} issued bonds with a face value of ${eur(F)} at par; the coupon rate is ${c}%, paid annually. On December 31 (the end of ${C}'s fiscal year), the bonds mature: ${C} repays the face value and pays the final annual coupon by bank transfer.`,
+      text: `${['Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten'][n - 5]} years ago, ${C} issued bonds with a face value of ${eur(F)} at par; the coupon rate is ${c}%, paid annually. On December 31 (the end of ${C}'s fiscal year), the bonds mature: ${C} repays the face value and pays the final annual coupon by bank transfer.${rec('the repayment and the final coupon payment', 'December 31')}`,
       lines: [Dr(BONDS, F), Dr(INT_EXP, I), Cr(CASH, F + I)],
       explain: `The liability is settled at face value (Bonds Payable → debit ${eur(F)}). The final coupon of ${eur(F)} × ${c}% = ${eur(I)} is interest expense (debit). Cash decreases by ${eur(F + I)} (credit).`,
       hint: 'Cash paid = face value + final coupon.',
     };
   }},
   { id: 'divdecl', level: 4, group: 'Dividends & share transactions', label: 'Declare a cash dividend', gen(C) {
-    const N = 1000 * rint(50, 2000), d = rint(1, 3), x = N * d, m = rint(0, 10);
+    const N = 1000 * rint(50, 2000), d = rint(1, 3), x = N * d, m = rint(0, 10), d1 = `${MONTHS[m]} ${rint(1, 20)}`;
     return {
-      text: `On ${MONTHS[m]} ${rint(1, 20)}, the board of directors of ${C} declares a cash dividend of ${eur(d)} per share on its ${fmt(N)} outstanding common shares, payable on ${MONTHS[m + 1]} ${rint(1, 28)}.`,
+      text: `On ${d1}, the board of directors of ${C} declares a cash dividend of ${eur(d)} per share on its ${fmt(N)} outstanding common shares, payable on ${MONTHS[m + 1]} ${rint(1, 28)}.${rec('the declaration', d1)}`,
       lines: [Dr(RE, x), Cr(DIV_PAY, x)],
       explain: `Total dividend = ${fmt(N)} × ${eur(d)} = ${eur(x)}. With the declaration, the company owes the dividend to its shareholders (Dividends Payable → credit). Dividends are a distribution of earnings, not an expense, so they reduce Retained Earnings directly (debit).`,
       hint: 'Total dividend = number of outstanding shares × dividend per share.',
     };
   }},
   { id: 'divpay', level: 4, group: 'Dividends & share transactions', label: 'Pay a declared dividend', gen(C) {
-    const N = 1000 * rint(50, 2000), d = rint(1, 3), x = N * d, m = rint(0, 10);
+    const N = 1000 * rint(50, 2000), d = rint(1, 3), x = N * d, m = rint(0, 10), d2 = `${MONTHS[m + 1]} ${rint(1, 28)}`;
     return {
-      text: `On ${MONTHS[m]} ${rint(1, 20)}, ${C} declared a cash dividend of ${eur(x)} in total (${eur(d)} per share on ${fmt(N)} shares); the declaration was recorded on that date. On ${MONTHS[m + 1]} ${rint(1, 28)}, ${C} pays the dividend by bank transfer.`,
+      text: `On ${MONTHS[m]} ${rint(1, 20)}, ${C} declared a cash dividend of ${eur(x)} in total (${eur(d)} per share on ${fmt(N)} shares); the declaration was recorded on that date. On ${d2}, ${C} pays the dividend by bank transfer.${rec('the dividend payment', d2)}`,
       lines: [Dr(DIV_PAY, x), Cr(CASH, x)],
       explain: `The liability recorded at the declaration is settled (Dividends Payable → debit) and Cash decreases (credit). Retained Earnings is not affected again: it was already reduced when the dividend was declared.`,
     };
   }},
   { id: 'stockdiv', level: 4, group: 'Dividends & share transactions', label: 'Stock dividend', gen(C) {
-    const N = 1000 * rint(10, 500), pct = pick([5, 10, 15]), k = N * pct / 100, par = pick([1, 2, 5, 10]), mp = par + rint(2, 30);
+    const N = 1000 * rint(10, 500), pct = pick([5, 10, 15]), k = N * pct / 100, par = pick([1, 2, 5, 10]), mp = par + rint(2, 30), dd = dateStr();
     return {
-      text: `${C} has ${fmt(N)} common shares outstanding with a par value of ${eur(par)} per share. On ${dateStr()}, the board declares and distributes a ${pct}% stock dividend. The market price of the shares on that date is ${eur(mp)}.`,
+      text: `${C} has ${fmt(N)} common shares outstanding with a par value of ${eur(par)} per share. On ${dd}, the board declares and distributes a ${pct}% stock dividend. The market price of the shares on that date is ${eur(mp)}.${rec('the stock dividend', dd)}`,
       lines: [Dr(RE, k * mp), Cr(CS, k * par), Cr(APIC, k * (mp - par))],
       explain: `New shares = ${fmt(N)} × ${pct}% = ${fmt(k)}. Retained Earnings is reduced by their market value: ${fmt(k)} × ${eur(mp)} = ${eur(k * mp)} (debit). Common Stock increases by the par value, ${fmt(k)} × ${eur(par)} = ${eur(k * par)}, and the excess, ${fmt(k)} × (${eur(mp)} − ${eur(par)}) = ${eur(k * (mp - par))}, goes to Additional Paid-in Capital (credits). Total shareholders' equity does not change.`,
       hint: 'Retained Earnings is reduced by the market value of the new shares; Common Stock gets the par value and APIC the rest.',
@@ -1134,7 +1145,7 @@ const TYPES = [
   { id: 'split', level: 4, group: 'Dividends & share transactions', label: 'Stock split', lineCheck: true, gen(C) {
     const r = pick([2, 3, 4, 5]), pn = pick([1, 2, 5]), po = pn * r, N = 1000 * rint(10, 500), T = N * po;
     return {
-      text: `${C} has ${fmt(N)} common shares outstanding with a par value of ${eur(po)} per share (Common Stock: ${eur(T)}). On ${dateStr()}, the board declares a ${r}-for-1 stock split and reduces the par value to ${eur(pn)} per share.`,
+      text: `${C} has ${fmt(N)} common shares outstanding with a par value of ${eur(po)} per share (Common Stock: ${eur(T)}). On ${dateStr()}, the board declares a ${r}-for-1 stock split and reduces the par value to ${eur(pn)} per share.${ANY}`,
       lines: [Dr(CS, T), Cr(CS, T)], lineCheck: true,
       noEntryOk: `Correct — because the total par value (${eur(T)}) does not change, a stock split can also be treated as needing no journal entry; only the new number of shares and the new par value are noted. In this course, the split is recorded as a restating entry: debit and credit Common Stock with ${eur(T)} each.`,
       noEntryHint: 'A stock split changes the number of shares and the par value. Record this in Common Stock: debit it at the old par value and credit it at the new par value.',
@@ -1143,9 +1154,9 @@ const TYPES = [
     };
   }},
   { id: 'treasury', level: 4, group: 'Dividends & share transactions', label: 'Treasury stock: buyback and re-issue (cost method)', gen(C) {
-    const q = 4000 * rint(2, 25), par = pick([1, 2, 5]), pr = par + rint(8, 50), kind = pick(['buy', 'above', 'below']);
+    const q = 4000 * rint(2, 25), par = pick([1, 2, 5]), pr = par + rint(8, 50), kind = pick(['buy', 'above', 'below']), d = dateStr();
     if (kind === 'buy') return {
-      text: `On ${dateStr()}, ${C} buys back ${fmt(q)} of its own common shares (par value ${eur(par)}) at ${eur(pr)} per share. ${C} uses the cost method for treasury stock.`,
+      text: `On ${d}, ${C} buys back ${fmt(q)} of its own common shares (par value ${eur(par)}) at ${eur(pr)} per share. ${C} uses the cost method for treasury stock.${rec('the buyback', d)}`,
       lines: [Dr(TREAS, q * pr), Cr(CASH, q * pr)],
       explain: `Under the cost method, the repurchased shares are recorded at the price paid: ${fmt(q)} × ${eur(pr)} = ${eur(q * pr)}. Treasury Stock is a contra-equity account (debit); Cash decreases (credit). Common Stock and APIC do not change.`,
       hint: 'Treasury stock is recorded at the total price paid.',
@@ -1153,16 +1164,16 @@ const TYPES = [
     const rq = q * pick([0.25, 0.5, 0.75]), p2 = kind === 'above' ? pr + rint(1, 10) : pr - rint(1, Math.min(8, pr - par - 1));
     const cost = rq * pr, cashIn = rq * p2, diff = cashIn - cost;
     return {
-      text: `Earlier this year, ${C} bought back ${fmt(q)} of its own common shares at ${eur(pr)} per share (cost method). On ${dateStr()}, it re-issues ${fmt(rq)} of these treasury shares at ${eur(p2)} per share.${kind === 'below' ? ' Assume that Additional Paid-in Capital is sufficient.' : ''}`,
+      text: `Earlier this year, ${C} bought back ${fmt(q)} of its own common shares at ${eur(pr)} per share (cost method). On ${d}, it re-issues ${fmt(rq)} of these treasury shares at ${eur(p2)} per share.${kind === 'below' ? ' Assume that Additional Paid-in Capital is sufficient.' : ''}${rec('the re-issue of the treasury shares', d)}`,
       lines: diff > 0 ? [Dr(CASH, cashIn), Cr(TREAS, cost), Cr(APIC, diff)] : [Dr(CASH, cashIn), Dr(APIC, -diff), Cr(TREAS, cost)],
       explain: `Cash increases by ${fmt(rq)} × ${eur(p2)} = ${eur(cashIn)}. Treasury Stock is reduced at its cost: ${fmt(rq)} × ${eur(pr)} = ${eur(cost)} (credit). The difference of ${eur(Math.abs(diff))} ${diff > 0 ? 'is credited' : 'is debited'} to Additional Paid-in Capital. A company never reports a gain or loss on transactions in its own shares.`,
       hint: 'Treasury Stock is credited at cost; the difference to the cash received goes to APIC.',
     };
   }},
   { id: 'retire', level: 4, group: 'Dividends & share transactions', label: 'Share buyback: constructive retirement method', gen(C) {
-    const q = 1000 * rint(5, 100), par = pick([1, 2, 5]), oi = par + rint(3, 20), rp = oi + rint(1, 15);
+    const q = 1000 * rint(5, 100), par = pick([1, 2, 5]), oi = par + rint(3, 20), rp = oi + rint(1, 15), d = dateStr();
     return {
-      text: `${C} originally issued its common shares (par value ${eur(par)}) at ${eur(oi)} per share. On ${dateStr()}, it buys back ${fmt(q)} of these shares at ${eur(rp)} per share and retires them immediately (constructive retirement method).`,
+      text: `${C} originally issued its common shares (par value ${eur(par)}) at ${eur(oi)} per share. On ${d}, it buys back ${fmt(q)} of these shares at ${eur(rp)} per share and retires them immediately (constructive retirement method).${rec('the buyback and retirement', d)}`,
       lines: [Dr(CS, q * par), Dr(APIC, q * (oi - par)), Dr(RE, q * (rp - oi)), Cr(CASH, q * rp)],
       explain: `Cash paid = ${fmt(q)} × ${eur(rp)} = ${eur(q * rp)}. The original contributions are reversed: Common Stock at par, ${fmt(q)} × ${eur(par)} = ${eur(q * par)}, and APIC, ${fmt(q)} × (${eur(oi)} − ${eur(par)}) = ${eur(q * (oi - par))}. The amount paid above the original issue price, ${fmt(q)} × (${eur(rp)} − ${eur(oi)}) = ${eur(q * (rp - oi))}, reduces Retained Earnings. All three are debits.`,
       hint: 'Common Stock at par, APIC for the rest of the original issue price, and Retained Earnings for the amount paid above the original issue price.',
@@ -1307,7 +1318,7 @@ function buildHint(task) {
 /* =====================================================================
    5. USER INTERFACE
    ===================================================================== */
-{
+if (typeof document !== 'undefined') {
   const $ = id => document.getElementById(id);
   const state = { task: null, type: null, attempts: 0, solved: false, revealed: false, stats: { tasks: 0, solved: 0, first: 0 } };
 
