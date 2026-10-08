@@ -86,8 +86,28 @@ details summary { cursor: pointer; color: var(--accent); }
 .chip.contra { font-style: italic; }
 .t-conv { margin: 6px 0 0; padding-left: 18px; }
 .t-conv li { margin: 3px 0; }
+.save-row { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
+.switch { position: relative; display: inline-flex; align-items: center; gap: 10px; cursor: pointer; color: var(--ink); }
+.switch input { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; padding: 0; }
+.switch .slider { position: relative; flex: none; width: 38px; height: 22px; border-radius: 11px; background: var(--muted); transition: background .15s; }
+.switch .slider::after { content: ''; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.3); transition: transform .15s; }
+.switch input:checked + .slider { background: var(--accent); }
+.switch input:checked + .slider::after { transform: translateX(16px); }
+.switch input:focus-visible + .slider { outline: 2px solid var(--accent); outline-offset: 2px; }
+.switch input:disabled + .slider { opacity: .5; }
+.save-note { font-size: .85rem; color: var(--muted); margin: 4px 0 0; }
+.progress-note { font-size: .85rem; color: var(--muted); margin: 10px 0; }
+.progress-table { width: 100%; border-collapse: collapse; font-size: .9rem; font-variant-numeric: tabular-nums; }
+.progress-table th { text-align: right; font-weight: 600; color: var(--muted); padding: 4px 0 4px 10px; border-bottom: 1px solid var(--line); }
+.progress-table th:first-child, .progress-table td:first-child { text-align: left; padding-left: 0; }
+.progress-table td { text-align: right; padding: 4px 0 4px 10px; border-bottom: 1px solid var(--line); }
+.progress-table tr.total td { font-weight: 600; border-bottom: none; }
+.progress-table .lvl { color: var(--muted); }
+#progress table { margin-top: 10px; }
+#btn-reset { margin-top: 12px; font-size: .9rem; padding: 6px 12px; }
 footer { margin-top: 28px; font-size: .8rem; color: var(--muted); }
 footer p { margin: 0 0 4px; }
+footer .copy { margin-top: 12px; }
 footer a { color: var(--accent); }
 header .byline { font-size: .9rem; margin-top: 2px; }
 @media (max-width: 560px) {
@@ -98,6 +118,11 @@ header .byline { font-size: .9rem; margin-top: 2px; }
   table.entry tr { display: grid; grid-template-columns: 1fr 1fr 44px; gap: 6px; padding: 8px 0; border-bottom: 1px solid var(--line); }
   table.entry td { padding: 0; }
   table.entry td:first-child { grid-column: 1 / -1; }
+  .je { width: 100%; font-size: .9rem; }
+  .je td:first-child { width: 100%; }
+  .je td { padding-top: 4px; padding-bottom: 4px; vertical-align: top; }
+  .je td.cr { padding-left: 16px; }
+  .je td.num { min-width: 0; white-space: nowrap; padding-left: 8px; padding-right: 0; }
   table.entry input::placeholder { color: var(--muted); opacity: .45; }
   .stats { margin-left: 0; width: 100%; }
 }
@@ -117,6 +142,10 @@ header .byline { font-size: .9rem; margin-top: 2px; }
       <div class="field"><label for="topic">Topic</label><select id="topic"></select></div>
       <button class="primary" id="btn-new">New task</button>
       <span class="stats" id="stats"></span>
+    </div>
+    <div class="save-row">
+      <label class="switch"><input type="checkbox" role="switch" id="save-progress"><span class="slider" aria-hidden="true"></span><span>Save my progress in this browser</span></label>
+      <p class="save-note" id="save-note"></p>
     </div>
   </div>
 
@@ -143,6 +172,12 @@ header .byline { font-size: .9rem; margin-top: 2px; }
     <div class="feedback" id="feedback" role="status" aria-live="polite"></div>
     <div class="solution" id="solution"></div>
   </div>
+
+  <details class="card" id="progress">
+    <summary>Statistics by topic</summary>
+    <div id="progress-list"></div>
+    <button id="btn-reset">Reset statistics</button>
+  </details>
 
   <details class="card">
     <summary>Debit and credit rules</summary>
@@ -176,7 +211,7 @@ header .byline { font-size: .9rem; margin-top: 2px; }
     </div>
   </details>
 
-  <footer><p class="copy">© 2026 Till Muenster</p><p>All tasks are generated randomly; companies and amounts are fictitious. Nothing you enter is stored or sent anywhere.</p><p>Ledger Lab is a practice aid. Despite careful checking, errors cannot be ruled out. In case of doubt, the lecture materials apply. If you believe you have found an error in a task, please e-mail Till Muenster at <a href="mailto:till.muenster@uni-mannheim.de?subject=Ledger%20Lab%3A%20possible%20error">till.muenster@uni-mannheim.de</a> and attach a screenshot of the task.</p></footer>
+  <footer><p>All tasks are generated randomly; companies and amounts are fictitious. Nothing you enter is sent anywhere. If you turn on “Save my progress”, your progress is stored in this browser only. Anonymous visitor counts are collected without cookies (GoatCounter).</p><p>Ledger Lab is a practice aid. Despite careful checking, errors cannot be ruled out. In case of doubt, the lecture materials apply. If you believe you have found an error in a task, please e-mail Till Muenster at <a href="mailto:till.muenster@uni-mannheim.de?subject=Ledger%20Lab%3A%20possible%20error">till.muenster@uni-mannheim.de</a> and attach a screenshot of the task.</p><p class="copy">Ledger Lab v1.1 · © 2026 Till Muenster</p><p class="legal"><a href="https://www.tillmuenster.com/impressum">Impressum / Legal Notice</a> · <a href="https://www.tillmuenster.com/data-privacy">Datenschutz / Privacy</a></p></footer>
 </div>
 
 <script>
@@ -676,6 +711,26 @@ const TYPES = [
     };
   }},
 
+  { id: 'gift', group: 'Sales & collections', label: 'Gift cards (sale and redemption)', fits: C => C.retail, gen(C) {
+    if (Math.random() < 0.5) {
+      const n = pick([20, 30, 40, 50, 60, 80, 100]), v = pick([25, 50, 100]), x = n * v;
+      const dw = dateStr();
+      return {
+        text: `During the week ending ${dw}, ${C} sells ${n} gift cards worth ${eur(v)} each for cash in its ${C.premises}. Customers can redeem the cards for merchandise at any time. Record the journal entry for the week's gift card sales.`,
+        lines: [Dr(CASH, x), Cr(ADV_CUS, x)],
+        explain: `Cash increases by ${n} × ${eur(v)} = ${eur(x)} (debit). Nothing has been delivered yet: the company owes the card holders merchandise worth ${eur(x)}, a liability (Advances from Customers → credit). Revenue is only recognized when a card is redeemed.`,
+      };
+    }
+    const v = pick([25, 50, 100]), s = v + stepRand(20, 600, 10), c = Math.round(s * pick([0.5, 0.55, 0.6, 0.65, 0.7]));
+    const d = dateStr();
+    return {
+      text: `On ${d}, a customer buys merchandise (${C.merch}) for ${eur(s)} in ${C}'s ${C.premises}. The customer pays with a gift card worth ${eur(v)}, which ${C} sold last month, and pays the remaining ${eur(s - v)} in cash. The merchandise sold had cost ${C} ${eur(c)}.${rec('the sale', d)}`,
+      lines: [Dr(CASH, s - v), Dr(ADV_CUS, v), Cr(SALES, s), Dr(COGS, c), Cr(INV, c)],
+      explain: `With the delivery, the full sales price of ${eur(s)} is earned (Sales Revenue → credit). It is paid partly by redeeming the gift card, which settles the obligation recorded when the card was sold (Advances from Customers → debit ${eur(v)}), and partly in cash (debit ${eur(s - v)}). The goods leave Inventory (credit ${eur(c)}) and become Cost of Goods Sold (debit).`,
+      hint: 'Revenue is the full price of the goods; the gift card and the cash together pay for it. Don\'t forget the cost of the goods sold.',
+    };
+  }},
+
   /* ---------- Expenses & interest ---------- */
   { id: 'opex', group: 'Expenses & interest', label: 'Operating expenses (SG&A, R&D)', gen(C) {
     const x = stepRand(500, 60000, 100), d = monthEnd();
@@ -813,27 +868,6 @@ const TYPES = [
       text: `On ${d}, ${C} ${ev}.${ANY}`,
       lines: [], noEntry: true,
       explain: `No journal entry is required. The company's assets, liabilities and equity have not changed yet: signing a contract that neither side has started to perform, receiving a quote, or expecting a deal does not create an asset or a liability. An entry is needed once one side performs (goods or services are delivered, or cash is paid) or once an event or period-end estimate changes an asset, a liability or equity.`,
-    };
-  }},
-
-  /* =================== LEVEL 1 additions =================== */
-  { id: 'gift', level: 1, group: 'Sales & collections', label: 'Gift cards (sale and redemption)', fits: C => C.retail, gen(C) {
-    if (Math.random() < 0.5) {
-      const n = pick([20, 30, 40, 50, 60, 80, 100]), v = pick([25, 50, 100]), x = n * v;
-      const dw = dateStr();
-      return {
-        text: `During the week ending ${dw}, ${C} sells ${n} gift cards worth ${eur(v)} each for cash in its ${C.premises}. Customers can redeem the cards for merchandise at any time. Record the journal entry for the week's gift card sales.`,
-        lines: [Dr(CASH, x), Cr(ADV_CUS, x)],
-        explain: `Cash increases by ${n} × ${eur(v)} = ${eur(x)} (debit). Nothing has been delivered yet: the company owes the card holders merchandise worth ${eur(x)}, a liability (Advances from Customers → credit). Revenue is only recognized when a card is redeemed.`,
-      };
-    }
-    const v = pick([25, 50, 100]), s = v + stepRand(20, 600, 10), c = Math.round(s * pick([0.5, 0.55, 0.6, 0.65, 0.7]));
-    const d = dateStr();
-    return {
-      text: `On ${d}, a customer buys merchandise (${C.merch}) for ${eur(s)} in ${C}'s ${C.premises}. The customer pays with a gift card worth ${eur(v)}, which ${C} sold last month, and pays the remaining ${eur(s - v)} in cash. The merchandise sold had cost ${C} ${eur(c)}.${rec('the sale', d)}`,
-      lines: [Dr(CASH, s - v), Dr(ADV_CUS, v), Cr(SALES, s), Dr(COGS, c), Cr(INV, c)],
-      explain: `With the delivery, the full sales price of ${eur(s)} is earned (Sales Revenue → credit). It is paid partly by redeeming the gift card, which settles the obligation recorded when the card was sold (Advances from Customers → debit ${eur(v)}), and partly in cash (debit ${eur(s - v)}). The goods leave Inventory (credit ${eur(c)}) and become Cost of Goods Sold (debit).`,
-      hint: 'Revenue is the full price of the goods; the gift card and the cash together pay for it. Don\'t forget the cost of the goods sold.',
     };
   }},
 
@@ -1318,9 +1352,31 @@ function buildHint(task) {
 /* =====================================================================
    5. USER INTERFACE
    ===================================================================== */
-if (typeof document !== 'undefined') {
+{
   const $ = id => document.getElementById(id);
-  const state = { task: null, type: null, attempts: 0, solved: false, revealed: false, stats: { tasks: 0, solved: 0, first: 0 } };
+  const state = { task: null, type: null, attempts: 0, solved: false, revealed: false };
+
+  // statistics per topic; saved in localStorage only if the student turns this on
+  const STORE_KEY = 'ledgerlab-progress';
+  const store = {
+    available() { try { return !!window.localStorage; } catch (e) { return false; } },
+    read() { try { const v = JSON.parse(localStorage.getItem(STORE_KEY)); return v && v.topics ? v : null; } catch (e) { return null; } },
+    write(v) { try { localStorage.setItem(STORE_KEY, JSON.stringify(v)); return true; } catch (e) { return false; } },
+    clear() { try { localStorage.removeItem(STORE_KEY); } catch (e) { /* storage unavailable */ } },
+  };
+  const emptyStats = () => ({ v: 1, topics: {} });
+  let session = emptyStats(), storeError = !store.available(), saving = !storeError && !!store.read();
+  const bump = (st, id, field) => { const t = st.topics[id] || (st.topics[id] = { tasks: 0, solved: 0, first: 0 }); t[field]++; };
+  const shown = () => (saving && store.read()) || session;
+  function record(field) {
+    bump(session, state.type.id, field);
+    if (saving) {
+      const st = store.read() || emptyStats();
+      bump(st, state.type.id, field);
+      if (!store.write(st)) { saving = false; storeError = true; }
+    }
+    updateStats();
+  }
 
   // level and topic selectors
   const sel = $('topic'), lvlSel = $('level');
@@ -1409,8 +1465,23 @@ if (typeof document !== 'undefined') {
     $('btn-next').onclick = newTask;
   }
   function updateStats() {
-    const s = state.stats;
-    $('stats').textContent = s.tasks ? `Solved ${s.solved} of ${s.tasks} · ${s.first} on first try` : '';
+    const st = shown(), s = { tasks: 0, solved: 0, first: 0 };
+    for (const t of TYPES) { const x = st.topics[t.id]; if (x) { s.tasks += x.tasks; s.solved += x.solved; s.first += x.first; } }
+    $('stats').textContent = `Solved ${s.solved} of ${s.tasks} · ${s.first} on first try`;
+    renderProgress(st, s);
+  }
+  function renderProgress(st, s) {
+    $('save-progress').checked = saving;
+    $('save-progress').disabled = !store.available();
+    $('save-note').textContent = storeError
+      ? 'Your browser does not allow saving here (e.g. in a private window or with strict privacy settings). Your progress is lost when you reload or close the page.'
+      : 'If turned on, your progress is saved across sessions, but only in this browser; it is never sent anywhere. Turning it off deletes your saved progress.';
+    const rows = TYPES.filter(t => st.topics[t.id] && st.topics[t.id].tasks).map(t => { const x = st.topics[t.id];
+      return `<tr><td><span class="lvl">Level ${t.level} ·</span> ${t.label}</td><td>${x.tasks}</td><td>${x.solved}</td><td>${x.first}</td></tr>`; });
+    $('progress-list').innerHTML = rows.length
+      ? '<table class="progress-table"><thead><tr><th>Topic</th><th>Tasks</th><th>Solved</th><th>First try</th></tr></thead><tbody>' + rows.join('') +
+        `<tr class="total"><td>Total</td><td>${s.tasks}</td><td>${s.solved}</td><td>${s.first}</td></tr></tbody></table>`
+      : '<p class="progress-note">No tasks yet.</p>';
   }
   function newTask() {
     const choice = sel.value;
@@ -1441,7 +1512,7 @@ if (typeof document !== 'undefined') {
     const first = $('rows').querySelector('select'); if (first && window.matchMedia('(pointer:fine)').matches) first.focus({ preventScroll: true });
   }
   function setButtons(on) { ['btn-check', 'btn-hint', 'btn-noentry', 'btn-add'].forEach(id => $(id).disabled = !on); }
-  function countTask() { if (!state.counted) { state.counted = true; state.stats.tasks++; updateStats(); } }
+  function countTask() { if (!state.counted) { state.counted = true; record('tasks'); } }
   function check(claimNoEntry) {
     if (state.solved || state.revealed) return;
     let lines = [];
@@ -1454,8 +1525,8 @@ if (typeof document !== 'undefined') {
     const res = grade(state.task, lines, claimNoEntry);
     showFeedback(res.ok, res.msgs);
     if (res.ok) {
-      state.solved = true; state.stats.solved++; if (state.attempts === 1) state.stats.first++;
-      updateStats(); setButtons(false); renderSolution();
+      state.solved = true; record('solved'); if (state.attempts === 1) record('first');
+      setButtons(false); renderSolution();
     }
   }
   $('btn-new').onclick = newTask;
@@ -1465,9 +1536,28 @@ if (typeof document !== 'undefined') {
   $('btn-noentry').onclick = () => check(true);
   $('btn-solution').onclick = () => { if (!state.solved) { state.revealed = true; countTask(); setButtons(false); } renderSolution(); };
   sel.onchange = newTask;
+  $('save-progress').onchange = e => {
+    storeError = false;
+    if (e.target.checked) {
+      const st = store.read() || emptyStats();
+      for (const [id, x] of Object.entries(session.topics)) { if (!st.topics[id]) st.topics[id] = { tasks: 0, solved: 0, first: 0 }; for (const k in x) st.topics[id][k] += x[k]; }
+      saving = store.write(st); storeError = !saving;
+    } else { saving = false; store.clear(); }
+    updateStats();
+  };
+  let resetTimer = null;
+  $('btn-reset').onclick = () => {
+    const b = $('btn-reset');
+    if (!resetTimer) { b.textContent = 'Click again to reset'; resetTimer = setTimeout(() => { resetTimer = null; b.textContent = 'Reset statistics'; }, 3000); return; }
+    clearTimeout(resetTimer); resetTimer = null; b.textContent = 'Reset statistics';
+    session = emptyStats(); if (saving && !store.write(emptyStats())) { saving = false; storeError = true; }
+    updateStats();
+  };
   lvlSel.onchange = () => { buildTopics(); newTask(); };
   newTask();
 }
 </script>
+<script data-goatcounter="https://tillmuenster.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>
 </body>
 </html>
