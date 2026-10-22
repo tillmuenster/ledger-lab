@@ -105,6 +105,32 @@ details summary { cursor: pointer; color: var(--accent); }
 .progress-table .lvl { color: var(--muted); }
 #progress table { margin-top: 10px; }
 #btn-reset { margin-top: 12px; font-size: .9rem; padding: 6px 12px; }
+.task-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; }
+.task-head .task-meta { margin-bottom: 0; }
+.task-code { font-size: .8rem; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.task-code button.link { font-size: .8rem; padding: 0 0 0 6px; }
+.notice { font-size: .9rem; color: var(--warn); background: var(--warn-bg); border-radius: 8px; padding: 8px 12px; margin: 0 0 12px; }
+.exam-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.exam-title { font-weight: 700; }
+.exam-timer { font-variant-numeric: tabular-nums; font-size: 1.05rem; font-weight: 600; }
+.exam-nav { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0; }
+.exam-nav button { min-width: 38px; padding: 5px 0; font-variant-numeric: tabular-nums; }
+.exam-nav button.answered { background: var(--bg); border-color: var(--muted); }
+.exam-nav button.current { outline: 2px solid var(--accent); outline-offset: 1px; font-weight: 700; }
+.exam-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.exam-actions .spacer { flex: 1; }
+.exam-note { font-size: .85rem; color: var(--muted); margin: 10px 0 0; }
+.exam-note button.link { font-size: .85rem; padding: 4px 0 0; }
+#btn-noentry.pressed { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.score { font-size: 1.6rem; font-weight: 700; margin: 4px 0; }
+.rv-item { border-top: 1px solid var(--line); padding: 16px 0 6px; }
+.rv-head { font-size: .85rem; color: var(--muted); margin-bottom: 6px; }
+.rv-head b { font-size: .95rem; }
+.rv-item.ok .rv-mark { color: var(--ok); } .rv-item.bad .rv-mark { color: var(--bad); }
+.rv-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 10px; }
+.rv-cols h4 { margin: 0 0 6px; font-size: .9rem; }
+.rv-msgs { font-size: .9rem; color: var(--bad); margin: 8px 0 0; padding-left: 20px; }
+.rv-buttons { display: flex; flex-wrap: wrap; gap: 10px; margin: 14px 0 4px; }
 footer { margin-top: 28px; font-size: .8rem; color: var(--muted); }
 footer p { margin: 0 0 4px; }
 footer .copy { margin-top: 12px; }
@@ -125,6 +151,7 @@ header .byline { font-size: .9rem; margin-top: 2px; }
   .je td.num { min-width: 0; white-space: nowrap; padding-left: 8px; padding-right: 0; }
   table.entry input::placeholder { color: var(--muted); opacity: .45; }
   .stats { margin-left: 0; width: 100%; }
+  .rv-cols { grid-template-columns: 1fr; }
 }
 </style>
 </head>
@@ -141,6 +168,7 @@ header .byline { font-size: .9rem; margin-top: 2px; }
       <div class="field"><label for="level">Topics up to</label><select id="level"></select></div>
       <div class="field"><label for="topic">Topic</label><select id="topic"></select></div>
       <button class="primary" id="btn-new">New task</button>
+      <button id="btn-exam">Start skill check</button>
       <span class="stats" id="stats"></span>
     </div>
     <div class="save-row">
@@ -149,8 +177,19 @@ header .byline { font-size: .9rem; margin-top: 2px; }
     </div>
   </div>
 
+  <div class="card" id="exam-bar" hidden>
+    <div class="exam-top"><span class="exam-title" id="exam-title"></span><span class="exam-timer" id="exam-timer" title="Time elapsed"></span></div>
+    <div class="exam-nav" id="exam-nav" aria-label="Skill check tasks"></div>
+    <div class="exam-actions">
+      <button id="exam-prev">← Previous</button><button id="exam-next">Next →</button><span class="spacer"></span>
+      <button class="primary" id="exam-finish">Finish skill check</button><button class="link" id="exam-cancel">Cancel skill check</button>
+    </div>
+    <p class="exam-note" id="exam-note"></p>
+  </div>
+
   <div class="card" id="task-card">
-    <div class="task-meta" id="task-meta"></div>
+    <p class="notice" id="notice" hidden></p>
+    <div class="task-head"><div class="task-meta" id="task-meta"></div><div class="task-code" id="task-code"></div></div>
     <div class="task-text" id="task-text"></div>
     <p class="books-note">All entries are recorded in the books of the company named in the task.</p>
 
@@ -173,8 +212,11 @@ header .byline { font-size: .9rem; margin-top: 2px; }
     <div class="solution" id="solution"></div>
   </div>
 
+  <div class="card" id="exam-review" hidden></div>
+
   <details class="card" id="progress">
     <summary>Statistics by topic</summary>
+    <p class="progress-note">Results of skill checks are not included in these statistics.</p>
     <div id="progress-list"></div>
     <button id="btn-reset">Reset statistics</button>
   </details>
@@ -211,7 +253,7 @@ header .byline { font-size: .9rem; margin-top: 2px; }
     </div>
   </details>
 
-  <footer><p>All tasks are generated randomly; companies and amounts are fictitious. Nothing you enter is sent anywhere. If you turn on “Save my progress”, your progress is stored in this browser only. Anonymous visitor counts are collected without cookies (GoatCounter).</p><p>Ledger Lab is a practice aid. Despite careful checking, errors cannot be ruled out. In case of doubt, the lecture materials apply. If you believe you have found an error in a task, please e-mail Till Muenster at <a href="mailto:till.muenster@uni-mannheim.de?subject=Ledger%20Lab%3A%20possible%20error">till.muenster@uni-mannheim.de</a> and attach a screenshot of the task.</p><p class="copy">Ledger Lab v1.1 · © 2026 Till Muenster</p><p class="legal"><a href="https://www.tillmuenster.com/impressum">Impressum / Legal Notice</a> · <a href="https://www.tillmuenster.com/data-privacy">Datenschutz / Privacy</a></p></footer>
+  <footer><p>All tasks are generated randomly; companies and amounts are fictitious. Nothing you enter is sent anywhere. If you turn on “Save my progress”, your progress is stored in this browser only. Anonymous visitor counts are collected without cookies (GoatCounter).</p><p>Ledger Lab is a practice aid. Despite careful checking, errors cannot be ruled out. In case of doubt, the lecture materials apply. If you believe you have found an error in a task, please e-mail Till Muenster at <a id="mail-link" href="mailto:till.muenster@uni-mannheim.de?subject=Ledger%20Lab%20v1.2%3A%20possible%20error">till.muenster@uni-mannheim.de</a> and describe the problem.</p><p class="copy">Ledger Lab v1.2 · © 2026 Till Muenster</p><p class="legal"><a href="https://www.tillmuenster.com/impressum">Impressum / Legal Notice</a> · <a href="https://www.tillmuenster.com/data-privacy">Datenschutz / Privacy</a></p></footer>
 </div>
 
 <script>
@@ -394,11 +436,24 @@ const COMPANY_EXTRAS = {
     warranty: { goods: 'barcode scanners and point-of-sale terminals', years: 'one-year' },
     unit: { sg: 'barcode scanner of the model "Scan Pro"', pl: 'barcode scanners of the model "Scan Pro"', cost: [100, 300], step: 10 },
     bundle: { product: 'twenty barcode scanners', p: [2000, 8000], service: '12 months of support for the scanners', s: [200, 1000], later: 'over the next 12 months' } },
+  'Sunharbor Solar Inc.': {
+    warranty: { goods: 'solar panels and inverters', years: 'five-year' },
+    unit: { sg: 'solar panel of the model "SH-410"', pl: 'solar panels of the model "SH-410"', cost: [120, 300], step: 10 },
+    bundle: { product: 'a rooftop solar system for a family home', p: [8000, 20000], service: '12 months of remote monitoring for the system', s: [200, 800], later: 'over the next 12 months' } },
+  'Nemo & Sons Inc.': { retail: true,
+    warranty: { goods: 'aquariums and filters', years: 'one-year' },
+    unit: { sg: 'aquarium of the model "Reef 120"', pl: 'aquariums of the model "Reef 120"', cost: [150, 400], step: 10 },
+    bundle: { product: 'an aquarium with filter and lighting', p: [300, 1500], service: 'a 12-month aquarium maintenance plan', s: [100, 400], later: 'over the next 12 months' } },
 };
 
+/* Size factor: scales the general amount ranges (not the firm-specific ones above) for smaller firms.
+   Ranges are scaled, step sizes are kept, so every amount stays on its grid. */
+const SIZE = { 'Nemo & Sons Inc.': 0.2, 'Bookworm Inc.': 0.2, 'Greenleaf Landscaping Inc.': 0.3,
+  'Alpineviews Outdoor Inc.': 0.5, 'Rhineworks Bikes Inc.': 0.5, 'Limetree Furniture Inc.': 0.5,
+  'Northern Lights Coffee Inc.': 0.7, 'Harborview Tools Inc.': 0.7, 'Squareline Office Supplies Inc.': 0.7 };
 const COMPANIES = [
   { name: 'Alpineviews Outdoor Inc.', merch: 'hiking boots and tents', premises: 'store',
-    services: [['services the rental skis of a local ski school', 1000, 8000], ['runs a guided hiking tour for a local company\'s staff outing', 800, 5000], ['runs a two-day climbing course for a youth club', 1000, 6000]],
+    services: [['services the rental skis of a local ski school', 1000, 8000], ['runs a guided hiking tour for a local company\'s staff outing', 800, 5000], ['runs a climbing course for a youth club', 1000, 6000]],
     contract: 'ski servicing contract for the rental skis of a ski school',
     rnd: 'a new lightweight tent', brand: 'hiking boots',
     equipment: [['two delivery vans', 50000, 120000, true, true], ['a ski-servicing machine', 15000, 60000, true], ['shelving and display systems for its store', 10000, 50000, false, true]] },
@@ -438,7 +493,7 @@ const COMPANIES = [
     rnd: 'a new sugar-free soft drink', brand: 'lemonade',
     equipment: [['two delivery trucks', 80000, 200000, true, true], ['a forklift for its warehouse', 20000, 60000, true], ['warehouse shelving systems', 10000, 80000, false, true]] },
   { name: 'Greenleaf Landscaping Inc.', merch: 'plants and garden tools', premises: 'garden centre',
-    services: [['designs a new garden layout for a private customer', 800, 5000], ['maintains the green areas of an office park', 1000, 8000], ['prunes the trees of a school', 500, 4000]],
+    services: [['designs a new garden layout for a private customer', 800, 5000], ['mows the lawns and trims the hedges of an office park', 1000, 8000], ['prunes the trees of a school', 500, 4000]],
     contract: 'garden maintenance contract for an office park',
     rnd: 'a new peat-free potting soil', brand: 'potting soil',
     equipment: [['a small excavator for its landscaping work', 30000, 90000, true], ['a greenhouse irrigation system', 10000, 60000, false], ['two delivery vans', 50000, 120000, true, true]] },
@@ -454,17 +509,40 @@ const COMPANIES = [
     rnd: 'a new payroll module for its ERP system', brand: 'accounting software',
     rndSpend: 'cloud computing services used this month', rndLab: 'an external software testing firm',
     equipment: [['servers for its data centre', 20000, 150000, true, true], ['a backup power system for its data centre', 10000, 60000, true], ['a delivery van', 25000, 60000, true]] },
-].map(c => ({ rndSpend: 'materials used up this month', rndLab: 'an external testing laboratory', ...c, ...(COMPANY_EXTRAS[c.name] || {}), toString() { return this.name; } }));
+  { name: 'Sunharbor Solar Inc.', merch: 'solar panels and inverters', premises: 'warehouse',
+    services: [['inspects the rooftop solar system of a warehouse', 300, 3000], ['cleans the solar panels on the roof of a supermarket', 300, 2500], ['prepares a solar feasibility study for a car dealership', 800, 5000]],
+    contract: 'monitoring contract for the rooftop solar system of a school',
+    rnd: 'a new self-cleaning coating for solar panels', brand: 'solar mounting systems',
+    equipment: [['two installation vans', 50000, 120000, true, true], ['a forklift for its warehouse', 20000, 60000, true], ['a drone for roof inspections', 5000, 20000, false]] },
+  { name: 'Nemo & Sons Inc.', merch: 'pet food and aquariums', premises: 'store',
+    services: [["grooms a customer's dog", 40, 200], ["sets up a customer's new aquarium", 100, 600], ['cleans the aquariums of a restaurant', 200, 1500]],
+    contract: 'aquarium maintenance contract for a dental practice',
+    rnd: 'a new energy-saving aquarium filter', brand: 'cat food',
+    equipment: [['a delivery van', 25000, 60000, true], ['shelving and aquarium display systems for its store', 10000, 50000, false, true], ['a dog-grooming station', 5000, 25000, false]] },
+].map(c => ({ rndSpend: 'materials used up this month', rndLab: 'an external testing laboratory', size: SIZE[c.name] || 1, ...c, ...(COMPANY_EXTRAS[c.name] || {}), toString() { return this.name; } }));
 const ORD = { 1: 'first', 2: 'second', 3: 'third' };
 const an = n => (n === 8 || n === 11 || n === 18 || String(n).startsWith('8')) ? 'an' : 'a';
 const theForm = d => /^an? /.test(d) ? d.replace(/^an? /, 'the ') : 'the ' + d;
 /* A depreciable asset of the company: one of its equipment items or a building. */
 const ncAsset = C => {
-  if (Math.random() < 0.75) { const e = pick(C.equipment); return { acct: 'Equipment', desc: e[0], min: e[1], max: e[2], plural: !!e[4] }; }
-  return { acct: 'Buildings', desc: pick(['an office building', `a ${C.premises} building`]), min: 200000, max: 1200000 };
+  if (rand() < 0.75) { const e = pick(C.equipment); return { acct: 'Equipment', desc: e[0], min: e[1], max: e[2], plural: !!e[4] }; }
+  const f = C.size || 1;
+  return { acct: 'Buildings', desc: pick(['an office building', `a ${C.premises} building`]), min: roundTo(200000 * f, 10000), max: roundTo(1200000 * f, 10000) };
 };
-const rint = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
-const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+/* Random numbers: tasks are generated with a seeded generator, so a task code recreates exactly the same task. */
+let RNG = Math.random;
+const rand = () => RNG();
+const mulberry32 = seed => () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+  t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+const withSeed = (seed, fn) => { const prev = RNG; RNG = mulberry32(seed); try { return fn(); } finally { RNG = prev; } };
+const newSeed = () => Math.floor(Math.random() * 4294967296);
+const rint = (a, b) => a + Math.floor(rand() * (b - a + 1));
+/* scaled amount on the grid of step s (at least 2 steps) · scaled count for amounts of the form unit × count */
+const sRand = (C, a, b, s) => { const f = C.size || 1; if (f === 1) return stepRand(a, b, s);
+  const lo = Math.max(2 * s, Math.ceil(a * f / s) * s); return stepRand(lo, Math.max(lo, Math.floor(b * f / s) * s), s); };
+const sInt = (C, a, b) => { const f = C.size || 1; if (f === 1) return rint(a, b);
+  const lo = Math.max(1, Math.ceil(a * f)); return rint(lo, Math.max(lo, Math.floor(b * f))); };
+const pick = arr => arr[Math.floor(rand() * arr.length)];
 const stepRand = (a, b, s) => a + s * rint(0, Math.floor((b - a) / s));
 const roundTo = (x, s) => Math.max(s, Math.round(x / s) * s);
 const fmt = n => n.toLocaleString('en-US', { maximumFractionDigits: 2, minimumFractionDigits: Number.isInteger(n) ? 0 : 2 });
@@ -513,9 +591,9 @@ function periodSetup(maxCovered) {
 const TYPES = [
   /* ---------- Equity & financing ---------- */
   { id: 'stock', group: 'Equity & financing', label: 'Issue common stock', gen(C) {
-    const shares = pick([10000, 20000, 25000, 40000, 50000, 100000]);
+    const shares = roundTo(pick([10000, 20000, 25000, 40000, 50000, 100000]) * (C.size || 1), 1000);
     const par = pick([1, 1, 1, 2, 5, 0.5]);
-    const atPar = Math.random() < 0.2;
+    const atPar = rand() < 0.2;
     const price = atPar ? par : pick([2, 3, 4, 5, 6, 8, 10, 12, 15, 20, 25, 38].filter(p => p > par));
     const cash = shares * price, cs = shares * par, apic = cash - cs;
     const lines = [Dr(CASH, cash), Cr(CS, cs)];
@@ -531,7 +609,7 @@ const TYPES = [
     };
   }},
   { id: 'loan', group: 'Equity & financing', label: 'Take out a bank loan', gen(C) {
-    const x = stepRand(20000, 500000, 5000), n = rint(3, 10), d = dateStr();
+    const x = sRand(C, 20000, 500000, 5000), n = rint(3, 10), d = dateStr();
     return {
       text: pick([`On ${d}, ${C} takes out ${an(n)} ${n}-year bank loan of ${eur(x)}. The bank transfers the amount to ${C}'s bank account. Interest is paid annually; the full amount is repaid at the end of the term.`,
                   `On ${d}, ${C} borrows ${eur(x)} from its bank for a term of ${n} years. The money is paid into ${C}'s bank account. Interest is paid annually; the full amount is repaid at the end of the term.`]) + rec('the loan', d),
@@ -540,9 +618,9 @@ const TYPES = [
     };
   }},
   { id: 'repay', group: 'Equity & financing', label: 'Repay a loan (with interest)', gen(C) {
-    const L = 12000 * rint(5, 40), r = rint(3, 9), I = L * r / 100;
+    const L = 12000 * sInt(C, 5, 40), r = rint(3, 9), I = L * r / 100;
     const P = roundTo(L * pick([0.1, 0.2, 0.25, 0.5]), 1000);
-    const computed = Math.random() < 0.5;
+    const computed = rand() < 0.5;
     const text = computed
       ? `${C} has a bank loan with an outstanding balance of ${eur(L)} at an interest rate of ${r}% p.a. The loan is repaid in annual installments of ${eur(P)}, and interest on the outstanding balance is paid once a year. On December 31 (the end of ${C}'s fiscal year), ${C} pays this year's installment together with the interest for the past 12 months by bank transfer.${rec('the payment', 'December 31')}`
       : `${C}'s bank loan is repaid in annual installments. On December 31 (the end of ${C}'s fiscal year), ${C} pays this year's installment of ${eur(P)} together with ${eur(I)} of interest for the past year by bank transfer.${rec('the payment', 'December 31')}`;
@@ -557,7 +635,7 @@ const TYPES = [
 
   /* ---------- Purchases & payments ---------- */
   { id: 'buyinv', group: 'Purchases & payments', label: 'Buy inventory', gen(C) {
-    const x = stepRand(4000, 80000, 500), mode = pick(['cash', 'account', 'account', 'mixed']);
+    const x = sRand(C, 4000, 80000, 500), mode = pick(['cash', 'account', 'account', 'mixed']);
     const d = dateStr();
     if (mode === 'cash') return {
       text: `On ${d}, ${C} purchases merchandise (${C.merch}) for ${eur(x)} and pays immediately by bank transfer.${rec('the purchase', d)}`,
@@ -583,12 +661,12 @@ const TYPES = [
     const assets = [
       { acct: 'Land', desc: [`a plot of land for a new ${C.premises}`], min: 80000, max: 600000, s: 10000, credit: false, loan: [5, 10] },
       { acct: 'Buildings', desc: ['an office building', `a ${C.premises} building`], min: 200000, max: 1200000, s: 10000, credit: false, loan: [5, 10] },
-      { acct: 'Equipment', desc: [eq[0]], min: eq[1], max: eq[2], s: 1000, credit: true, loan: eq[3] ? [3, 5] : null },
+      { acct: 'Equipment', desc: [eq[0]], min: eq[1], max: eq[2], s: 1000, credit: true, loan: eq[3] ? [3, 5] : null, firm: true },
       ...(C.sellsComputers ? [] : [{ acct: 'Equipment', desc: ['computer equipment for its offices'], min: 10000, max: 60000, s: 1000, credit: true, loan: null }]),
       ...(C.ownSoftware ? [] : [{ acct: 'Intangible Assets', desc: ['a 5-year licence for inventory management software'], min: 20000, max: 150000, s: 1000, credit: true, loan: null }]),
       { acct: 'Intangible Assets', desc: [`the trademark rights to a regional brand of ${C.brand}`], min: 30000, max: 200000, s: 1000, credit: true, loan: null },
     ];
-    const a = pick(assets), desc = pick(a.desc), x = stepRand(a.min, a.max, a.s), d = dateStr();
+    const a = pick(assets), desc = pick(a.desc), x = a.firm ? stepRand(a.min, a.max, a.s) : sRand(C, a.min, a.max, a.s), d = dateStr();
     const n = a.loan ? rint(a.loan[0], a.loan[1]) : 0;
     const modes = ['cash'].concat(a.loan ? ['loan', 'cashloan'] : [], a.credit ? ['account', 'cashaccount'] : []);
     const mode = pick(modes), p = roundTo(x * pick([0.2, 0.25, 0.3, 0.4, 0.5]), a.s);
@@ -614,9 +692,9 @@ const TYPES = [
     return res;
   }},
   { id: 'paysup', group: 'Purchases & payments', label: 'Pay a supplier', gen(C) {
-    const o = stepRand(5000, 60000, 1000), full = Math.random() < 0.5, p = full ? o : roundTo(o * pick([0.25, 0.4, 0.5, 0.6]), 500), d = dateStr();
+    const o = sRand(C, 5000, 60000, 1000), full = rand() < 0.5, p = full ? o : roundTo(o * pick([0.25, 0.4, 0.5, 0.6]), 500), d = dateStr();
     return {
-      text: (full && Math.random() < 0.5
+      text: (full && rand() < 0.5
         ? `On ${d}, ${C} pays a supplier invoice of ${eur(o)} in full by bank transfer. The invoice is for merchandise delivered last month.`
         : `On ${d}, ${C} transfers ${eur(p)} to a supplier. The payment settles ${full ? 'the full amount' : 'part'} of the ${eur(o)} it owes on a supplier invoice for merchandise delivered last month.`) + rec('the payment', d),
       lines: [Dr(AP, p), Cr(CASH, p)],
@@ -626,12 +704,12 @@ const TYPES = [
   { id: 'prepay', group: 'Purchases & payments', label: 'Pay in advance (rent, insurance, goods)', gen(C) {
     const kind = pick(['rent', 'insurance', 'goods']), d = randDate(0, 10), start = `${MONTHS[d.m + 1]} 1`;
     if (kind === 'goods') {
-      const x = stepRand(2000, 50000, 500);
+      const x = sRand(C, 2000, 50000, 500);
       return { text: `On ${d.str}, ${C} pays ${eur(x)} in advance to a supplier for merchandise (${C.merch}) that will be delivered next month.${rec('the payment', d.str)}`,
         lines: [Dr(ADV_SUP, x), Cr(CASH, x)],
         explain: `The goods have not been received yet, so Inventory is not affected. The company has a claim on the supplier to deliver goods — an asset (Advances to Suppliers → debit). Cash decreases (credit).` };
     }
-    const n = kind === 'rent' ? pick([3, 6, 12]) : pick([6, 12]), x = n * stepRand(300, 4000, 100);
+    const n = kind === 'rent' ? pick([3, 6, 12]) : pick([6, 12]), x = n * sRand(C, 300, 4000, 100);
     const acct = kind === 'rent' ? PRE_RENT : PRE_INS;
     return { text: (kind === 'rent'
         ? `On ${d.str}, ${C} pays ${eur(x)} in cash for ${n} months of ${C.premises} rent in advance (rental period starting ${start}).`
@@ -640,7 +718,7 @@ const TYPES = [
       explain: `The payment covers future periods, so it is not an expense yet. It is recorded as an asset (${acct} → debit); Cash decreases (credit). The expense is recognized later, as time passes.` };
   }},
   { id: 'recvgoods', group: 'Purchases & payments', label: 'Receive goods paid in advance', gen(C) {
-    const x = stepRand(2000, 40000, 500), full = Math.random() < 0.5, y = full ? x : x + stepRand(1000, 30000, 500), d = dateStr();
+    const x = sRand(C, 2000, 40000, 500), full = rand() < 0.5, y = full ? x : x + sRand(C, 1000, 30000, 500), d = dateStr();
     return {
       text: `Last month, ${C} paid ${eur(x)} in advance to a supplier for merchandise (${C.merch}). On ${d}, the merchandise is delivered. ` +
         (full ? 'The advance payment covers the full price.' : `The total price is ${eur(y)}; the remaining ${eur(y - x)} is due in 30 days.`) + rec('the delivery', d),
@@ -652,7 +730,7 @@ const TYPES = [
 
   /* ---------- Sales & collections ---------- */
   { id: 'salegoods', group: 'Sales & collections', label: 'Sell goods', gen(C) {
-    const s = stepRand(2000, 90000, 500), c = roundTo(s * pick([0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75]), 100);
+    const s = sRand(C, 2000, 90000, 500), c = roundTo(s * pick([0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75]), 100);
     const mode = pick(['cash', 'account', 'account', 'mixed']), d = dateStr();
     const cost = ` The merchandise sold had cost ${C} ${eur(c)}.${rec('the sale', d)}`;
     const cogs = [Dr(COGS, c), Cr(INV, c)];
@@ -671,16 +749,16 @@ const TYPES = [
       hint: 'Revenue is the full sales price; the cash part and the part still owed together must equal it. Don\'t forget the cost of the goods sold.' };
   }},
   { id: 'saleserv', group: 'Sales & collections', label: 'Sell services', gen(C) {
-    const [svc, lo, hi] = pick(C.services), x = stepRand(lo, hi, lo < 1000 ? 10 : 100), cash = Math.random() < 0.5, d = dateStr();
+    const [svc, lo, hi] = pick(C.services), x = stepRand(lo, hi, lo < 1000 ? 10 : 100), cash = rand() < 0.5, d = dateStr();
     return {
-      text: `On ${d}, ${C} ${svc} and ${cash ? `receives ${eur(x)} in cash` : `sends an invoice for ${eur(x)}, payable within 30 days`}.${rec('the service provided', d)}`,
+      text: `On ${d}, ${C} ${svc} and ${cash ? `receives ${eur(x)} in cash` : `sends an invoice for ${eur(x)}, payable within 30 days`}. The service is fully provided on that day.${rec('the service provided', d)}`,
       lines: [Dr(cash ? CASH : AR, x), Cr(SALES, x)],
       explain: `The service has been delivered, so revenue is earned (Sales Revenue → credit). ${cash ? 'Cash increases (debit).' : 'The customer owes the amount (Accounts Receivable → debit).'} There is no Cost of Goods Sold because no merchandise leaves Inventory.`,
     };
   }},
   { id: 'advcus', group: 'Sales & collections', label: 'Receive a customer advance', gen(C) {
-    const d = randDate(0, 10), goods = Math.random() < 0.5;
-    const n = pick([3, 6, 12]), x = goods ? stepRand(2000, 60000, 1000) : n * stepRand(100, 2000, 50);
+    const d = randDate(0, 10), goods = rand() < 0.5;
+    const n = pick([3, 6, 12]), x = goods ? sRand(C, 2000, 60000, 1000) : n * sRand(C, 100, 2000, 50);
     return {
       text: goods ? `On ${d.str}, ${C} receives ${eur(x)} in cash from a customer as an advance payment for merchandise (${C.merch}) to be delivered in two months.${rec('the payment received', d.str)}`
                   : `On ${d.str}, ${C} receives ${eur(x)} in cash for a ${n}-month ${C.contract}, starting on ${MONTHS[d.m + 1]} 1.${rec('the payment received', d.str)}`,
@@ -689,7 +767,7 @@ const TYPES = [
     };
   }},
   { id: 'deliver', group: 'Sales & collections', label: 'Deliver goods paid in advance', gen(C) {
-    const a = 2000 * rint(3, 30), half = Math.random() < 0.5, rev = half ? a / 2 : a;
+    const a = 2000 * sInt(C, 3, 30), half = rand() < 0.5, rev = half ? a / 2 : a;
     const c = roundTo(rev * pick([0.4, 0.5, 0.6, 0.7]), 100);
     const m1 = rint(0, 8), m2 = m1 + rint(1, 3);
     const d1 = `${MONTHS[m1]} ${rint(1, 28)}`, d2 = `${MONTHS[m2]} ${rint(1, 28)}`;
@@ -701,7 +779,7 @@ const TYPES = [
     };
   }},
   { id: 'collect', group: 'Sales & collections', label: 'Collect a receivable', gen(C) {
-    const o = stepRand(3000, 80000, 1000), full = Math.random() < 0.6, p = full ? o : roundTo(o * pick([0.25, 0.4, 0.5]), 500), d = dateStr();
+    const o = sRand(C, 3000, 80000, 1000), full = rand() < 0.6, p = full ? o : roundTo(o * pick([0.25, 0.4, 0.5]), 500), d = dateStr();
     return {
       text: (full ? pick([`On ${d}, a customer transfers ${eur(p)} to ${C} to settle an invoice for merchandise delivered last month.`,
                          `On ${d}, ${C} receives a bank transfer of ${eur(p)} from a customer, settling an invoice for merchandise delivered last month.`])
@@ -712,8 +790,8 @@ const TYPES = [
   }},
 
   { id: 'gift', group: 'Sales & collections', label: 'Gift cards (sale and redemption)', fits: C => C.retail, gen(C) {
-    if (Math.random() < 0.5) {
-      const n = pick([20, 30, 40, 50, 60, 80, 100]), v = pick([25, 50, 100]), x = n * v;
+    if (rand() < 0.5) {
+      const n = Math.max(5, roundTo(pick([20, 30, 40, 50, 60, 80, 100]) * (C.size || 1), 5)), v = pick([25, 50, 100]), x = n * v;
       const dw = dateStr();
       return {
         text: `During the week ending ${dw}, ${C} sells ${n} gift cards worth ${eur(v)} each for cash in its ${C.premises}. Customers can redeem the cards for merchandise at any time. Record the journal entry for the week's gift card sales.`,
@@ -733,7 +811,7 @@ const TYPES = [
 
   /* ---------- Expenses & interest ---------- */
   { id: 'opex', group: 'Expenses & interest', label: 'Operating expenses (SG&A, R&D)', gen(C) {
-    const x = stepRand(500, 60000, 100), d = monthEnd();
+    const x = sRand(C, 500, 60000, 100), d = monthEnd();
     const items = [
       { a: SGA, pay: 'cash', t: `pays ${eur(x)} in salaries to its sales staff for the current month` },
       { a: SGA, pay: 'cash', t: `pays ${eur(x)} in salaries to its administrative staff for the current month` },
@@ -764,8 +842,8 @@ const TYPES = [
     };
   }},
   { id: 'intexp', group: 'Expenses & interest', label: 'Interest expense (paid or accrued)', gen(C) {
-    const k = rint(3, 30), L = 12000 * k, r = rint(3, 9), yrs = rint(3, 10);
-    if (Math.random() < 0.5) {
+    const k = sInt(C, 3, 30), L = 12000 * k, r = rint(3, 9), yrs = rint(3, 10);
+    if (rand() < 0.5) {
       const I = L * r / 400, dq = pick(['March 31', 'June 30', 'September 30', 'December 31']);
       return {
         text: `On ${dq}, ${C} pays the quarterly interest on its ${eur(L)} bank loan by bank transfer. The loan has a term of ${yrs} years and an interest rate of ${r}% p.a.; interest is paid quarterly, and the full amount is repaid at the end of the term.${rec('the interest payment', dq)}`,
@@ -784,8 +862,8 @@ const TYPES = [
     };
   }},
   { id: 'intrev', group: 'Expenses & interest', label: 'Interest revenue (received or accrued)', gen(C) {
-    const r = rint(1, 4), dep = 12000 * rint(2, 40);
-    if (Math.random() < 0.5) {
+    const r = rint(1, 4), dep = 12000 * sInt(C, 2, 40);
+    if (rand() < 0.5) {
       const I = dep * r / 100;
       return {
         text: `On December 31 (the end of ${C}'s fiscal year), ${C}'s bank credits ${eur(I)} of interest to ${C}'s bank account for a fixed-term deposit held during the past year.${rec('the interest received', 'December 31')}`,
@@ -805,8 +883,8 @@ const TYPES = [
 
   /* ---------- Adjusting entries ---------- */
   { id: 'adjprepaid', group: 'Adjusting entries', label: 'Prepaid rent / insurance used up', gen(C) {
-    const rent = Math.random() < 0.5, acct = rent ? PRE_RENT : PRE_INS;
-    const n = rent ? pick([3, 6, 12]) : pick([6, 12]), mon = stepRand(300, 4000, 100), A = mon * n;
+    const rent = rand() < 0.5, acct = rent ? PRE_RENT : PRE_INS;
+    const n = rent ? pick([3, 6, 12]) : pick([6, 12]), mon = sRand(C, 300, 4000, 100), A = mon * n;
     const ps = periodSetup(n - 1), m = ps.covered, x = mon * m;
     return {
       text: `On ${ps.startStr}, ${C} paid ${eur(A)} in advance for ${n} months of ${rent ? 'office rent' : 'insurance coverage'}, starting that day, and recorded it as ${acct}. ${ps.task}`,
@@ -816,7 +894,7 @@ const TYPES = [
     };
   }},
   { id: 'adjunearned', group: 'Adjusting entries', label: 'Customer advance for services earned', gen(C) {
-    const n = pick([3, 6, 12]), mon = stepRand(100, 2000, 50), F = mon * n;
+    const n = pick([3, 6, 12]), mon = sRand(C, 100, 2000, 50), F = mon * n;
     const ps = periodSetup(n - 1), m = ps.covered, x = mon * m;
     return {
       text: `On ${ps.startStr}, ${C} received ${eur(F)} in cash for a ${n}-month ${C.contract}, starting that day, and recorded it as Advances from Customers. ${C} provides the service evenly over the contract period. ${ps.task}`,
@@ -829,13 +907,13 @@ const TYPES = [
   /* ---------- Closing ---------- */
   { id: 'closing', group: 'Closing entries', label: 'Close revenue and expense accounts', gen(C) {
     for (;;) {
-    const S = stepRand(80000, 600000, 1000);
+    const S = sRand(C, 80000, 600000, 1000);
     const bal = [[SALES, S]];
-    if (Math.random() < 0.5) bal.push([INT_REV, stepRand(200, 4000, 50)]);
+    if (rand() < 0.5) bal.push([INT_REV, sRand(C, 200, 4000, 50)]);
     bal.push([COGS, roundTo(S * pick([0.4, 0.45, 0.5, 0.55, 0.6, 0.65]), 1000)]);
     bal.push([SGA, roundTo(S * pick([0.1, 0.15, 0.2, 0.25]), 100)]);
-    if (Math.random() < 0.5) bal.push([RND, roundTo(S * pick([0.05, 0.08, 0.1]), 100)]);
-    if (Math.random() < 0.6) bal.push([INT_EXP, stepRand(300, 8000, 100)]);
+    if (rand() < 0.5) bal.push([RND, roundTo(S * pick([0.05, 0.08, 0.1]), 100)]);
+    if (rand() < 0.6) bal.push([INT_EXP, sRand(C, 300, 8000, 100)]);
     const isRev = a => ACC[a].type === 'Revenue';
     const rev = bal.filter(b => isRev(b[0])).reduce((t, b) => t + b[1], 0);
     const exp = bal.filter(b => !isRev(b[0])).reduce((t, b) => t + b[1], 0);
@@ -855,7 +933,7 @@ const TYPES = [
 
   /* ---------- No entry ---------- */
   { id: 'noentry', group: 'Transaction or not?', label: 'Events that need no entry', gen(C) {
-    const x = stepRand(2000, 50000, 500), d = dateStr();
+    const x = sRand(C, 2000, 50000, 500), d = dateStr();
     const ev = pick([
       `signs a contract with a supplier to buy merchandise (${C.merch}) worth ${eur(x)}; the goods will be delivered and paid for next month`,
       `hires a new sales manager, who will start work next month at a monthly salary of ${eur(roundTo(x / 5, 100))}`,
@@ -886,7 +964,7 @@ const TYPES = [
     };
   }},
   { id: 'instsale', level: 2, group: 'Revenue recognition', label: 'Installment / cost recovery method: the sale', gen(C) {
-    const S = 300 * rint(20, 400), g = pick([20, 25, 30, 40]), GP = S * g / 100, cost = S - GP, inst = Math.random() < 0.5;
+    const S = 300 * sInt(C, 20, 400), g = pick([20, 25, 30, 40]), GP = S * g / 100, cost = S - GP, inst = rand() < 0.5;
     return {
       text: `On ${dateStr()}, ${C} sells merchandise (${C.merch}) for ${eur(S)} to a newly founded business customer, who will pay in three equal annual installments of ${eur(S / 3)}. The merchandise had cost ${C} ${eur(cost)} (gross profit percentage: ${g}%). Because collection is ${inst ? 'uncertain' : 'highly uncertain'}, ${C} uses the ${inst ? 'installment' : 'cost recovery'} method. Record the sale.`,
       lines: [Dr(AR, S), Cr(INV, cost), Cr(DGP, GP)],
@@ -895,7 +973,7 @@ const TYPES = [
     };
   }},
   { id: 'instcoll', level: 2, group: 'Revenue recognition', label: 'Installment method: collection', gen(C) {
-    const S = 300 * rint(20, 400), g = pick([20, 25, 30, 40]), I = S / 3, k = rint(1, 3), gp = I * g / 100, cg = I - gp;
+    const S = 300 * sInt(C, 20, 400), g = pick([20, 25, 30, 40]), I = S / 3, k = rint(1, 3), gp = I * g / 100, cg = I - gp;
     return {
       text: `${C} sold merchandise (${C.merch}) for ${eur(S)} to a business customer, payable in three equal annual installments of ${eur(I)}. The gross profit percentage is ${g}%, and ${C} uses the installment method; the sale${k > 1 ? ' and the earlier installments were' : ' was'} recorded accordingly. On ${monthEnd()}, the customer pays the ${ORD[k]} installment. Record the collection and the resulting revenue.`,
       lines: [Dr(CASH, I), Cr(AR, I), Dr(COGS, cg), Dr(DGP, gp), Cr(SALES, I)],
@@ -905,7 +983,7 @@ const TYPES = [
     };
   }},
   { id: 'crcoll', level: 2, group: 'Revenue recognition', label: 'Cost recovery method: collection', gen(C) {
-    const S = 300 * rint(20, 400), g = pick([20, 25, 30, 40]), I = S / 3, k = rint(1, 3), cost = S * (100 - g) / 100;
+    const S = 300 * sInt(C, 20, 400), g = pick([20, 25, 30, 40]), I = S / 3, k = rint(1, 3), cost = S * (100 - g) / 100;
     const before = (k - 1) * I, remaining = Math.max(0, cost - before), cg = Math.min(I, remaining), gp = I - cg;
     const lines = [Dr(CASH, I), Cr(AR, I), Dr(COGS, cg), Dr(DGP, gp), Cr(SALES, I)].filter(l => l[2] > 0);
     return {
@@ -923,7 +1001,7 @@ const TYPES = [
     };
   }},
   { id: 'bdpct', level: 2, group: 'Receivables & returns', label: 'Bad debts: percentage-of-sales method', gen(C) {
-    const CS = stepRand(200000, 3000000, 10000), p = rint(1, 5), x = CS * p / 100;
+    const CS = sRand(C, 200000, 3000000, 10000), p = rint(1, 5), x = CS * p / 100;
     return {
       text: `For the fiscal year ending December 31, ${C} reports credit sales of ${eur(CS)}. Using the percentage-of-sales method, ${C} estimates that ${p}% of credit sales will turn out to be uncollectible. Record the adjusting entry on December 31.`,
       lines: [Dr(BAD, x), Cr(ALLOW, x)],
@@ -934,8 +1012,8 @@ const TYPES = [
   { id: 'bdaging', level: 2, group: 'Receivables & returns', label: 'Bad debts: aging method', gen(C) {
     for (;;) {
       const rows = [['Not yet due', pick([1, 2, 3, 5])], ['1–60 days past due', pick([10, 15, 20])], ['61–180 days past due', pick([30, 40, 50])], ['More than 180 days past due', pick([80, 100])]]
-        .map(([l, pc]) => [l, stepRand(5000, 90000, 1000), pc]);
-      const T = rows.reduce((t, r) => t + r[1] * r[2] / 100, 0), debit = Math.random() < 0.4;
+        .map(([l, pc]) => [l, sRand(C, 5000, 90000, 1000), pc]);
+      const T = rows.reduce((t, r) => t + r[1] * r[2] / 100, 0), debit = rand() < 0.4;
       const B = debit ? roundTo(T * pick([0.2, 0.3, 0.4]), 100) : roundTo(T * pick([0.2, 0.3, 0.4, 0.5, 0.6]), 100);
       const x = debit ? T + B : T - B;
       if (x <= 0 || B <= 0) continue;
@@ -953,7 +1031,7 @@ const TYPES = [
     }
   }},
   { id: 'writeoff', level: 2, group: 'Receivables & returns', label: 'Write off an uncollectible account', gen(C) {
-    const x = stepRand(500, 25000, 100), d = dateStr();
+    const x = sRand(C, 500, 25000, 100), d = dateStr();
     return {
       text: `On ${d}, ${C} learns that a customer who owes ${eur(x)} for merchandise bought last year has gone bankrupt and will not pay. ${C} uses the allowance method and writes off the receivable.${rec('the write-off', d)}`,
       lines: [Dr(ALLOW, x), Cr(AR, x)],
@@ -961,7 +1039,7 @@ const TYPES = [
     };
   }},
   { id: 'retest', level: 2, group: 'Receivables & returns', label: 'Sales returns: estimate', gen(C) {
-    const CS = stepRand(20000, 500000, 1000), r = pick([2, 3, 4, 5]), x = CS * r / 100, m = rint(0, 11);
+    const CS = sRand(C, 20000, 500000, 1000), r = pick([2, 3, 4, 5]), x = CS * r / 100, m = rint(0, 11);
     return {
       text: `During ${MONTHS[m]}, ${C} sells merchandise (${C.merch}) on account for ${eur(CS)}. Based on past experience, ${C} expects customers to return ${r}% of these sales. Record the estimated sales returns at the end of ${MONTHS[m]} (ignore the effect on inventory).`,
       lines: [Dr(SRET, x), Cr(ALLOW_RET, x)],
@@ -970,7 +1048,7 @@ const TYPES = [
     };
   }},
   { id: 'retact', level: 2, group: 'Receivables & returns', label: 'Sales returns: actual return', gen(C) {
-    const x = stepRand(200, 10000, 50);
+    const x = sRand(C, 200, 10000, 50);
     return {
       text: `On ${dateStr()}, a customer returns merchandise (${C.merch}) that it had bought on account for ${eur(x)}. ${C} uses the allowance method and had already estimated returns for these sales. Record the return (ignore the effect on inventory).`,
       lines: [Dr(ALLOW_RET, x), Cr(AR, x)],
@@ -995,7 +1073,7 @@ const TYPES = [
     const take = order => { let left = n; const used = []; for (const [q, c] of order) { const t = Math.min(q, left); if (t > 0) used.push([t, c]); left -= t; } return used; };
     const used = method === 'FIFO' ? take(layers) : method === 'LIFO' ? take([...layers].reverse()) : null;
     const cogs = used ? used.reduce((s, [t, c]) => s + t * c, 0) : T / U * n;
-    const p = roundTo(Math.max(c0, c1, c2) * pick([1.3, 1.4, 1.5, 1.6]), u.step), rev = n * p, cash = Math.random() < 0.5;
+    const p = roundTo(Math.max(c0, c1, c2) * pick([1.3, 1.4, 1.5, 1.6]), u.step), rev = n * p, cash = rand() < 0.5;
     const m = rint(0, 9), dA = rint(3, 10), dB = rint(15, 25), dS = rint(2, 20);
     const us = k => k === 1 ? `1 ${u.sg}` : `${k} ${u.pl}`;
     const table = '<table><tr><td><b>Date</b></td><td><b>Event</b></td><td class="num"><b>Units</b></td><td class="num"><b>Cost per unit</b></td></tr>' +
@@ -1015,7 +1093,7 @@ const TYPES = [
     };
   }},
   { id: 'invwd', level: 3, group: 'Inventory', label: 'Inventory write-down (lower of cost or NRV)', gen(C) {
-    const u = C.unit, q = rint(5, 60), c = stepRand(u.cost[0], u.cost[1], u.step), down = Math.random() < 0.7;
+    const u = C.unit, q = rint(5, 60), c = stepRand(u.cost[0], u.cost[1], u.step), down = rand() < 0.7;
     const maxDiff = Math.max(u.step, Math.floor(c * 0.4 / u.step) * u.step), diff = stepRand(u.step, maxDiff, u.step);
     const v = down ? c - diff : c + diff, loss = q * (c - v);
     const text = `On December 31, ${C} has ${q} ${u.pl} in stock, recorded at a cost of ${eur(c)} each. Because market prices have ${down ? 'fallen' : 'risen'}, the net realizable value is now ${eur(v)} per unit. Record any entry required.`;
@@ -1033,7 +1111,7 @@ const TYPES = [
     };
   }},
   { id: 'warracc', level: 3, group: 'Warranties', label: 'Warranties: estimate the liability', fits: C => C.warranty, gen(C) {
-    const S = stepRand(100000, 5000000, 10000), w = rint(1, 5), x = S * w / 100;
+    const S = sRand(C, 100000, 5000000, 10000), w = rint(1, 5), x = S * w / 100;
     return {
       text: `During the fiscal year ending December 31, ${C} sold ${C.warranty.goods} with a ${C.warranty.years} warranty for a total of ${eur(S)}. Based on experience, ${C} estimates that warranty repairs will cost ${w}% of these sales. Record the warranty expense on December 31 (the sales themselves have already been recorded).`,
       lines: [Dr(WAR_EXP, x), Cr(WAR_LIAB, x)],
@@ -1042,7 +1120,7 @@ const TYPES = [
     };
   }},
   { id: 'warruse', level: 3, group: 'Warranties', label: 'Warranties: repairs carried out', fits: C => C.warranty, gen(C) {
-    const x = stepRand(200, 30000, 100), parts = Math.random() < 0.5, d = dateStr();
+    const x = sRand(C, 200, 30000, 100), parts = rand() < 0.5, d = dateStr();
     return {
       text: (parts
         ? `On ${d}, ${C} repairs ${C.warranty.goods} brought in by customers under warranty, using spare parts from its own inventory that cost ${eur(x)}. The warranty liability was recorded when the goods were sold.`
@@ -1054,10 +1132,10 @@ const TYPES = [
   { id: 'deprec', level: 3, group: 'Property, plant & equipment', label: 'Straight-line depreciation', gen(C) {
     const a = ncAsset(C), bld = a.acct === 'Buildings';
     const n = bld ? pick([25, 40, 50]) : pick([4, 5, 8, 10]);
-    const S = bld ? pick([0, 50000, 100000]) : pick([0, 0, 1000, 2000, 5000]);
+    const S = bld ? pick([0, 50000, 100000].map(v => v && roundTo(v * (C.size || 1), 10000))) : pick([0, 0, 1000, 2000, 5000]);
     const mmLo = Math.max(1, Math.ceil((a.min - S) / (12 * n) / 10)), mmHi = Math.max(mmLo, Math.floor((a.max - S) / (12 * n) / 10));
     const mm = 10 * rint(mmLo, mmHi), annual = 12 * mm, A = S + annual * n;
-    const current = Math.random() < 0.5, s = current ? rint(1, 11) : rint(0, 11), yrs = rint(1, 2);
+    const current = rand() < 0.5, s = current ? rint(1, 11) : rint(0, 11), yrs = rint(1, 2);
     const months = current ? 12 - s : 12, x = mm * months;
     const ct = current ? countText(s, months, 'December 31') : '';
     return {
@@ -1073,7 +1151,7 @@ const TYPES = [
   { id: 'impair', level: 3, group: 'Property, plant & equipment', label: 'Impairment test', gen(C) {
     for (;;) {
       const a = ncAsset(C), A = stepRand(Math.max(a.min, 10000), a.max, 1000), AD = roundTo(A * pick([0.2, 0.3, 0.4, 0.5, 0.6]), 1000), BV = A - AD;
-      const imp = Math.random() < 0.7;
+      const imp = rand() < 0.7;
       const CF = roundTo(BV * (imp ? pick([0.6, 0.7, 0.8, 0.9]) : pick([1.1, 1.2, 1.3])), 1000);
       const FV = imp ? roundTo(CF * pick([0.6, 0.7, 0.8, 0.9]), 1000) : roundTo(BV * pick([1.05, 1.1, 1.15, 1.2]), 1000);
       if (BV <= 0 || (imp ? !(CF < BV && FV < CF) : !(CF > BV && FV > BV))) continue;
@@ -1112,7 +1190,7 @@ const TYPES = [
   }},
 
   /* =================== LEVEL 4 =================== */
-  { id: 'bondissue', level: 4, group: 'Bonds', label: 'Issue bonds (par, discount, premium)', gen(C) {
+  { id: 'bondissue', level: 4, group: 'Bonds', label: 'Issue bonds (par, discount, premium)', fits: C => (C.size || 1) >= 0.7, gen(C) {
     const F = 100000 * rint(5, 50), n = rint(5, 10), c = rint(3, 8), kind = pick(['par', 'disc', 'prem']);
     const m = kind === 'par' ? c : kind === 'disc' ? c + rint(1, 2) : c - rint(1, 2);
     let pv = F / Math.pow(1 + m / 100, n);
@@ -1131,8 +1209,8 @@ const TYPES = [
       check: { F, n, c, m, P, kind },
     };
   }},
-  { id: 'bondcoupon', level: 4, group: 'Bonds', label: 'Coupon payment (bonds issued at par)', gen(C) {
-    const F = 100000 * rint(5, 50), c = rint(3, 8), semi = Math.random() < 0.5, I = semi ? F * c / 200 : F * c / 100;
+  { id: 'bondcoupon', level: 4, group: 'Bonds', label: 'Coupon payment (bonds issued at par)', fits: C => (C.size || 1) >= 0.7, gen(C) {
+    const F = 100000 * rint(5, 50), c = rint(3, 8), semi = rand() < 0.5, I = semi ? F * c / 200 : F * c / 100;
     const date = semi ? pick(['June 30', 'December 31']) : 'December 31';
     return {
       text: `${C} has bonds outstanding with a face value of ${eur(F)} and a coupon rate of ${c}% p.a.; the bonds were issued at par. Interest is paid ${semi ? 'semiannually, on June 30 and December 31' : 'annually on December 31'}. Record the interest payment on ${date}.`,
@@ -1141,7 +1219,7 @@ const TYPES = [
       hint: 'Coupon = face value × coupon rate (× 6/12 for a semiannual payment).',
     };
   }},
-  { id: 'bondmature', level: 4, group: 'Bonds', label: 'Repayment at maturity', gen(C) {
+  { id: 'bondmature', level: 4, group: 'Bonds', label: 'Repayment at maturity', fits: C => (C.size || 1) >= 0.7, gen(C) {
     const F = 100000 * rint(5, 50), c = rint(3, 8), n = rint(5, 10), I = F * c / 100;
     return {
       text: `${['Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten'][n - 5]} years ago, ${C} issued bonds with a face value of ${eur(F)} at par; the coupon rate is ${c}%, paid annually. On December 31 (the end of ${C}'s fiscal year), the bonds mature: ${C} repays the face value and pays the final annual coupon by bank transfer.${rec('the repayment and the final coupon payment', 'December 31')}`,
@@ -1151,7 +1229,7 @@ const TYPES = [
     };
   }},
   { id: 'divdecl', level: 4, group: 'Dividends & share transactions', label: 'Declare a cash dividend', gen(C) {
-    const N = 1000 * rint(50, 2000), d = rint(1, 3), x = N * d, m = rint(0, 10), d1 = `${MONTHS[m]} ${rint(1, 20)}`;
+    const N = 1000 * sInt(C, 50, 2000), d = rint(1, 3), x = N * d, m = rint(0, 10), d1 = `${MONTHS[m]} ${rint(1, 20)}`;
     return {
       text: `On ${d1}, the board of directors of ${C} declares a cash dividend of ${eur(d)} per share on its ${fmt(N)} outstanding common shares, payable on ${MONTHS[m + 1]} ${rint(1, 28)}.${rec('the declaration', d1)}`,
       lines: [Dr(RE, x), Cr(DIV_PAY, x)],
@@ -1160,7 +1238,7 @@ const TYPES = [
     };
   }},
   { id: 'divpay', level: 4, group: 'Dividends & share transactions', label: 'Pay a declared dividend', gen(C) {
-    const N = 1000 * rint(50, 2000), d = rint(1, 3), x = N * d, m = rint(0, 10), d2 = `${MONTHS[m + 1]} ${rint(1, 28)}`;
+    const N = 1000 * sInt(C, 50, 2000), d = rint(1, 3), x = N * d, m = rint(0, 10), d2 = `${MONTHS[m + 1]} ${rint(1, 28)}`;
     return {
       text: `On ${MONTHS[m]} ${rint(1, 20)}, ${C} declared a cash dividend of ${eur(x)} in total (${eur(d)} per share on ${fmt(N)} shares); the declaration was recorded on that date. On ${d2}, ${C} pays the dividend by bank transfer.${rec('the dividend payment', d2)}`,
       lines: [Dr(DIV_PAY, x), Cr(CASH, x)],
@@ -1168,7 +1246,7 @@ const TYPES = [
     };
   }},
   { id: 'stockdiv', level: 4, group: 'Dividends & share transactions', label: 'Stock dividend', gen(C) {
-    const N = 1000 * rint(10, 500), pct = pick([5, 10, 15]), k = N * pct / 100, par = pick([1, 2, 5, 10]), mp = par + rint(2, 30), dd = dateStr();
+    const N = 1000 * sInt(C, 10, 500), pct = pick([5, 10, 15]), k = N * pct / 100, par = pick([1, 2, 5, 10]), mp = par + rint(2, 30), dd = dateStr();
     return {
       text: `${C} has ${fmt(N)} common shares outstanding with a par value of ${eur(par)} per share. On ${dd}, the board declares and distributes a ${pct}% stock dividend. The market price of the shares on that date is ${eur(mp)}.${rec('the stock dividend', dd)}`,
       lines: [Dr(RE, k * mp), Cr(CS, k * par), Cr(APIC, k * (mp - par))],
@@ -1177,7 +1255,7 @@ const TYPES = [
     };
   }},
   { id: 'split', level: 4, group: 'Dividends & share transactions', label: 'Stock split', lineCheck: true, gen(C) {
-    const r = pick([2, 3, 4, 5]), pn = pick([1, 2, 5]), po = pn * r, N = 1000 * rint(10, 500), T = N * po;
+    const r = pick([2, 3, 4, 5]), pn = pick([1, 2, 5]), po = pn * r, N = 1000 * sInt(C, 10, 500), T = N * po;
     return {
       text: `${C} has ${fmt(N)} common shares outstanding with a par value of ${eur(po)} per share (Common Stock: ${eur(T)}). On ${dateStr()}, the board declares a ${r}-for-1 stock split and reduces the par value to ${eur(pn)} per share.${ANY}`,
       lines: [Dr(CS, T), Cr(CS, T)], lineCheck: true,
@@ -1188,7 +1266,7 @@ const TYPES = [
     };
   }},
   { id: 'treasury', level: 4, group: 'Dividends & share transactions', label: 'Treasury stock: buyback and re-issue (cost method)', gen(C) {
-    const q = 4000 * rint(2, 25), par = pick([1, 2, 5]), pr = par + rint(8, 50), kind = pick(['buy', 'above', 'below']), d = dateStr();
+    const q = 4000 * sInt(C, 2, 25), par = pick([1, 2, 5]), pr = par + rint(8, 50), kind = pick(['buy', 'above', 'below']), d = dateStr();
     if (kind === 'buy') return {
       text: `On ${d}, ${C} buys back ${fmt(q)} of its own common shares (par value ${eur(par)}) at ${eur(pr)} per share. ${C} uses the cost method for treasury stock.${rec('the buyback', d)}`,
       lines: [Dr(TREAS, q * pr), Cr(CASH, q * pr)],
@@ -1205,7 +1283,7 @@ const TYPES = [
     };
   }},
   { id: 'retire', level: 4, group: 'Dividends & share transactions', label: 'Share buyback: constructive retirement method', gen(C) {
-    const q = 1000 * rint(5, 100), par = pick([1, 2, 5]), oi = par + rint(3, 20), rp = oi + rint(1, 15), d = dateStr();
+    const q = 1000 * sInt(C, 5, 100), par = pick([1, 2, 5]), oi = par + rint(3, 20), rp = oi + rint(1, 15), d = dateStr();
     return {
       text: `${C} originally issued its common shares (par value ${eur(par)}) at ${eur(oi)} per share. On ${d}, it buys back ${fmt(q)} of these shares at ${eur(rp)} per share and retires them immediately (constructive retirement method).${rec('the buyback and retirement', d)}`,
       lines: [Dr(CS, q * par), Dr(APIC, q * (oi - par)), Dr(RE, q * (rp - oi)), Cr(CASH, q * rp)],
@@ -1350,11 +1428,70 @@ function buildHint(task) {
 }
 
 /* =====================================================================
+   4b. TASK CODES AND EXAM COMPOSITION
+   A code stores the code version, the task type, the firm and the seed. CODE_VERSION must be increased
+   whenever a change to the task types, firms or generators would make an old code produce a different task.
+   ===================================================================== */
+const APP_VERSION = '1.2';
+const CODE_VERSION = 1;
+const B32 = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';   // Crockford base 32 (no I, L, O, U)
+const toB32 = (n, len) => { let s = ''; for (let i = 0; i < len; i++) { s = B32[Number(n % 32n)] + s; n /= 32n; } return s; };
+const fromB32 = s => { let n = 0n; for (const ch of s) { const i = B32.indexOf(ch); if (i < 0) return null; n = n * 32n + BigInt(i); } return n; };
+const fmtCode = c => c.slice(0, 4) + '-' + c.slice(4);
+const cleanCode = s => (s || '').toUpperCase().replace(/[^0-9A-Z]/g, '').replace(/O/g, '0').replace(/[IL]/g, '1');
+function makeTask(typeIdx, firmIdx, seed) {
+  const type = TYPES[typeIdx], C = COMPANIES[firmIdx];
+  const task = withSeed(seed, () => type.gen(C));
+  const n = ((BigInt(CODE_VERSION) * 64n + BigInt(typeIdx)) * 32n + BigInt(firmIdx)) * 4294967296n + BigInt(seed >>> 0);
+  task.code = fmtCode(toB32(n, 10));
+  return { type, task };
+}
+function randomTask(type) {   // a new task of this type for a random firm that fits it
+  const firms = COMPANIES.map((c, i) => i).filter(i => !type.fits || type.fits(COMPANIES[i]));
+  return makeTask(TYPES.indexOf(type), firms[Math.floor(rand() * firms.length)], newSeed());
+}
+function decodeTask(code) {   // → { type, task } | { error: 'invalid' | 'version' }
+  const c = cleanCode(code); if (c.length !== 10) return { error: 'invalid' };
+  const n = fromB32(c); if (n === null) return { error: 'invalid' };
+  const seed = Number(n % 4294967296n), rest = n / 4294967296n, firm = Number(rest % 32n), type = Number((rest / 32n) % 64n), ver = Number(rest / 2048n);
+  if (ver !== CODE_VERSION) return { error: ver >= 1 && ver < CODE_VERSION ? 'version' : 'invalid' };   // only real older versions count as 'version'
+  if (!TYPES[type] || !COMPANIES[firm] || (TYPES[type].fits && !TYPES[type].fits(COMPANIES[firm]))) return { error: 'invalid' };
+  return makeTask(type, firm, seed);
+}
+/* Skill check ("exam" in the code): 15 tasks; the mix depends on the level chosen. Within each level, the task types are all different
+   and spread evenly over the topic groups. An exam code recreates the same exam. */
+const EXAM_MIX = { 1: [15], 2: [10, 5], 3: [8, 4, 3], 4: [7, 3, 2, 3] };
+function buildExam(level, seed) {
+  return withSeed(seed, () => {
+    const shuffle = a => { a = [...a]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+    const items = [];
+    EXAM_MIX[level].forEach((count, li) => {
+      const L = li + 1, groups = shuffle([...new Set(TYPES.filter(t => t.level === L).map(t => t.group))]).map(g => shuffle(TYPES.filter(t => t.level === L && t.group === g)));
+      const chosen = [];
+      while (chosen.length < count) for (const g of groups) if (g.length && chosen.length < count) chosen.push(g.shift());
+      for (const type of shuffle(chosen)) { const firms = COMPANIES.map((c, i) => i).filter(i => !type.fits || type.fits(COMPANIES[i]));
+        items.push(makeTask(TYPES.indexOf(type), firms[Math.floor(rand() * firms.length)], Math.floor(rand() * 4294967296))); }
+    });
+    return items;
+  });
+}
+const examCode = (level, seed) => fmtCode(toB32((BigInt(CODE_VERSION) * 8n + BigInt(level)) * 4294967296n + BigInt(seed >>> 0), 8));
+function decodeExam(code) {
+  const c = cleanCode(code); if (c.length !== 8) return { error: 'invalid' };
+  const n = fromB32(c); if (n === null) return { error: 'invalid' };
+  const seed = Number(n % 4294967296n), rest = n / 4294967296n, level = Number(rest % 8n), ver = Number(rest / 8n);
+  if (ver !== CODE_VERSION) return { error: ver >= 1 && ver < CODE_VERSION ? 'version' : 'invalid' };
+  if (!EXAM_MIX[level]) return { error: 'invalid' };
+  return { level, seed };
+}
+
+/* =====================================================================
    5. USER INTERFACE
    ===================================================================== */
 {
   const $ = id => document.getElementById(id);
   const state = { task: null, type: null, attempts: 0, solved: false, revealed: false };
+  let exam = null;   // the running exam, if any
 
   // statistics per topic; saved in localStorage only if the student turns this on
   const STORE_KEY = 'ledgerlab-progress';
@@ -1416,7 +1553,7 @@ function buildHint(task) {
     const td4 = document.createElement('td'); const x = document.createElement('button'); x.className = 'link'; x.textContent = '✕'; x.title = 'Remove line'; x.setAttribute('aria-label', 'Remove line');
     x.onclick = () => { if ($('rows').children.length > 1) tr.remove(); }; td4.appendChild(x);
     tr.append(td1, mk('Debit'), mk('Credit'), td4);
-    tr.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); check(false); } });
+    tr.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); if (!exam) check(false); } });
     $('rows').appendChild(tr);
   }
   function parseAmount(s) {
@@ -1428,11 +1565,11 @@ function buildHint(task) {
     if (!/^\d+$/.test(int)) return NaN;
     return Number(int + (dec ? '.' + dec[1] : ''));
   }
-  function readRows() {
+  const rowValues = () => [...$('rows').children].map(tr => [...tr.querySelectorAll('select, input')].map(el => el.value));
+  function readRows(values = rowValues()) {
     const lines = [], errors = [];
-    [...$('rows').children].forEach((tr, i) => {
-      const [s, d, c] = tr.querySelectorAll('select, input');
-      const a = s.value, dv = parseAmount(d.value), cv = parseAmount(c.value);
+    values.forEach(([a, dRaw, cRaw], i) => {
+      const dv = parseAmount(dRaw), cv = parseAmount(cRaw);
       if (!a && dv === null && cv === null) return;
       const n = i + 1;
       if (!a) { errors.push(`Line ${n}: choose an account.`); return; }
@@ -1449,6 +1586,11 @@ function buildHint(task) {
     const f = $('feedback');
     f.className = 'feedback show ' + (ok === 'info' ? 'info' : ok ? 'ok' : 'bad');
     f.innerHTML = `<h3>${title || (ok === true ? 'Correct' : 'Not quite')}</h3>` + (msgs.length ? '<ul>' + msgs.map(m => `<li>${m}</li>`).join('') + '</ul>' : '');
+  }
+  function entryHTML(lines) {
+    return '<table class="je">' + lines.map(([a, s, x], i) => (i > 0 && s === 'Dr' && lines[i - 1][1] === 'Cr' ? '<tr><td colspan="3" style="height:10px"></td></tr>' : '') + (s === 'Dr'
+      ? `<tr><td>Dr. ${a}</td><td class="num">${fmt(x)}</td><td></td></tr>`
+      : `<tr><td class="cr">Cr. ${a}</td><td></td><td class="num">${fmt(x)}</td></tr>`)).join('') + '</table>';
   }
   function renderSolution() {
     const t = state.task, box = $('solution');
@@ -1501,20 +1643,43 @@ function buildHint(task) {
         for (const [t, w] of weighted) { if ((r -= w) < 0) { type = t; break; } }
       } while (state.type && type.id === state.type.id && Math.random() < 0.8);
     } else type = TYPES.find(t => t.id === choice);
-    state.type = type; state.task = type.gen(pick(companiesFor(type)));
+    showTask(randomTask(type));
+  }
+  function showTask({ type, task }) {
+    $('exam-review').hidden = true; $('task-card').hidden = false; resetNoEntryButton();
+    state.type = type; state.task = task;
     state.attempts = 0; state.solved = false; state.revealed = false;
     state.counted = false; updateStats();
+    $('notice').hidden = true;
     $('task-meta').textContent = `Level ${type.level} · ${type.group}`;
-    $('task-text').innerHTML = state.task.text;
+    $('task-text').innerHTML = task.text;
+    $('task-code').innerHTML = `<button class="link" id="copy-task" data-code="${task.code}">Share this task</button>`;
+    $('copy-task').onclick = e => copyLink(e.target, '?task=' + task.code);
+    setMail(`task ${task.code}`, `Task code: ${task.code}\nLink to the task: ${linkBase()}?task=${task.code}`);
     $('rows').innerHTML = ''; addRow(); addRow();
     $('feedback').className = 'feedback'; $('solution').className = 'solution';
     setButtons(true);
     const first = $('rows').querySelector('select'); if (first && window.matchMedia('(pointer:fine)').matches) first.focus({ preventScroll: true });
   }
+  // links and error reports: the address bar is never changed while practising
+  const linkBase = () => /^https?:$/.test(location.protocol) ? location.origin + location.pathname : 'https://ledgerlab.tillmuenster.com/';
+  function copyLink(btn, query) {
+    const url = linkBase() + query, label = btn.textContent;
+    const done = ok => { btn.textContent = ok ? 'Link copied' : 'Copy failed'; setTimeout(() => { btn.textContent = label; }, 2000); };
+    if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(url).then(() => done(true), () => done(false));
+    else { const ta = document.createElement('textarea'); ta.value = url; document.body.appendChild(ta); ta.select();
+      let ok = false; try { ok = document.execCommand('copy'); } catch (e) { /* not supported */ } ta.remove(); done(ok); }
+  }
+  function setMail(what, details) {
+    const subject = `Ledger Lab v${APP_VERSION}: possible error (${what})`;
+    const body = `${details}\nLedger Lab version: v${APP_VERSION}\n\nDescription of the problem:\n`;
+    $('mail-link').href = 'mailto:till.muenster@uni-mannheim.de?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+  }
+  function showNotice(msg) { $('notice').textContent = msg; $('notice').hidden = false; }
   function setButtons(on) { ['btn-check', 'btn-hint', 'btn-noentry', 'btn-add'].forEach(id => $(id).disabled = !on); }
   function countTask() { if (!state.counted) { state.counted = true; record('tasks'); } }
   function check(claimNoEntry) {
-    if (state.solved || state.revealed) return;
+    if (exam || state.solved || state.revealed) return;
     let lines = [];
     if (!claimNoEntry) {
       const r = readRows();
@@ -1533,7 +1698,7 @@ function buildHint(task) {
   $('btn-add').onclick = addRow;
   $('btn-check').onclick = () => check(false);
   $('btn-hint').onclick = () => { if (!state.solved && !state.revealed) showFeedback('info', buildHint(state.task), 'Hint'); };
-  $('btn-noentry').onclick = () => check(true);
+  $('btn-noentry').onclick = () => exam ? toggleNoEntry() : check(true);
   $('btn-solution').onclick = () => { if (!state.solved) { state.revealed = true; countTask(); setButtons(false); } renderSolution(); };
   sel.onchange = newTask;
   $('save-progress').onchange = e => {
@@ -1554,7 +1719,117 @@ function buildHint(task) {
     updateStats();
   };
   lvlSel.onchange = () => { buildTopics(); newTask(); };
-  newTask();
+  /* ---------- skill check (called "exam" in the code): 15 tasks, no hints or solutions until the end, answers can be changed until then ---------- */
+  const fmtTime = ms => { const t = Math.floor(ms / 1000), h = Math.floor(t / 3600), m = Math.floor(t / 60) % 60, p2 = n => String(n).padStart(2, '0');
+    return (h ? h + ':' + p2(m) : p2(m)) + ':' + p2(t % 60); };
+  function practiceControls(on) {
+    [lvlSel, sel, $('btn-new'), $('btn-exam')].forEach(el => { el.disabled = !on; });
+    ['btn-check', 'btn-hint', 'btn-solution'].forEach(id => { $(id).hidden = !on; });
+  }
+  function resetNoEntryButton() { const b = $('btn-noentry'); b.classList.remove('pressed'); b.removeAttribute('aria-pressed'); b.textContent = 'No entry required'; }
+  function startExam(level, seed = newSeed()) {
+    if (exam) clearInterval(exam.timer);
+    const items = buildExam(level, seed).map(it => ({ ...it, answer: { rows: [], noEntry: false } }));
+    exam = { level, seed, code: examCode(level, seed), items, idx: -1, start: Date.now(), timer: null, armed: null };
+    practiceControls(false); setButtons(true);
+    $('exam-review').hidden = true; $('task-card').hidden = false; $('exam-bar').hidden = false; $('notice').hidden = true;
+    $('feedback').className = 'feedback'; $('solution').className = 'solution';
+    $('exam-title').textContent = `Skill check · ${LEVELS[level - 1].name}`;
+    $('exam-nav').innerHTML = items.map((_, i) => `<button data-i="${i}" aria-label="Task ${i + 1}">${i + 1}</button>`).join('');
+    $('exam-note').innerHTML = `<span id="exam-count"></span> · Answers can be changed until you finish the skill check; hints and solutions follow at the end.<br><button class="link" id="copy-exam" data-code="${exam.code}">Share this skill check</button>`;
+    $('copy-exam').onclick = e => copyLink(e.target, '?test=' + exam.code);
+    const tick = () => { $('exam-timer').textContent = 'Time ' + fmtTime(Date.now() - exam.start); };
+    tick(); exam.timer = setInterval(tick, 1000);
+    setMail(`skill check ${exam.code}`, `Skill check code: ${exam.code}\nLink to the skill check: ${linkBase()}?test=${exam.code}\nTask number in the skill check: `);
+    goto(0);
+  }
+  const answered = a => a.noEntry || a.rows.some(([acc, d, c]) => acc || (d || '').trim() || (c || '').trim());
+  function saveAnswer() { if (exam && exam.idx >= 0) exam.items[exam.idx].answer.rows = rowValues(); }
+  function goto(i) {
+    saveAnswer(); disarm();
+    exam.idx = Math.max(0, Math.min(exam.items.length - 1, i));
+    const { type, task, answer } = exam.items[exam.idx];
+    $('task-meta').textContent = `Task ${exam.idx + 1} of ${exam.items.length} · Level ${type.level} · ${type.group}`;
+    $('task-text').innerHTML = task.text; $('task-code').innerHTML = '';
+    $('rows').innerHTML = '';
+    for (const r of answer.rows.length ? answer.rows : [['', '', ''], ['', '', '']]) {
+      addRow(); $('rows').lastElementChild.querySelectorAll('select, input').forEach((el, k) => { el.value = r[k] || ''; });
+    }
+    setNoEntry(answer.noEntry);
+    $('exam-prev').disabled = exam.idx === 0; $('exam-next').disabled = exam.idx === exam.items.length - 1;
+    updateExamBar();
+    if ($('exam-bar').getBoundingClientRect().top < 0) $('exam-bar').scrollIntoView({ block: 'start' });
+  }
+  function setNoEntry(on) {
+    const b = $('btn-noentry'); b.classList.toggle('pressed', on); b.setAttribute('aria-pressed', String(on)); b.textContent = on ? '✓ No entry required' : 'No entry required';
+    $('rows').querySelectorAll('select, input, button').forEach(el => { el.disabled = on; }); $('btn-add').disabled = on;
+  }
+  function toggleNoEntry() { const a = exam.items[exam.idx].answer; a.noEntry = !a.noEntry; setNoEntry(a.noEntry); updateExamBar(); }
+  function updateExamBar() {
+    const n = exam.items.filter(it => answered(it.answer)).length;
+    [...$('exam-nav').children].forEach((b, i) => { b.classList.toggle('answered', answered(exam.items[i].answer)); b.classList.toggle('current', i === exam.idx);
+      if (i === exam.idx) b.setAttribute('aria-current', 'step'); else b.removeAttribute('aria-current'); });
+    $('exam-count').textContent = `${n} of ${exam.items.length} answered`;
+  }
+  const onExamEdit = () => { if (exam) { saveAnswer(); updateExamBar(); } };
+  ['input', 'change', 'click'].forEach(ev => $('rows').addEventListener(ev, onExamEdit));
+  // "Finish" and "Cancel" need a second click (no browser dialogs)
+  function arm(btn, armedText, action) {
+    if (exam.armed === btn.id) { disarm(); action(); return; }
+    disarm(); exam.armed = btn.id; btn.dataset.label = btn.textContent; btn.textContent = armedText; exam.armTimer = setTimeout(disarm, 4000);
+  }
+  function disarm() { if (!exam || !exam.armed) return; clearTimeout(exam.armTimer); const b = $(exam.armed); b.textContent = b.dataset.label; exam.armed = null; }
+  function leaveExam() { clearInterval(exam.timer); exam = null; $('exam-bar').hidden = true; practiceControls(true); resetNoEntryButton(); }
+  function finishExam() {
+    saveAnswer();
+    const ex = exam, time = fmtTime(Date.now() - ex.start);
+    const results = ex.items.map(({ task, answer: a }) => {
+      if (a.noEntry) return grade(task, [], true);
+      if (!answered(a)) return { ok: false, msgs: ['No answer given.'] };
+      const r = readRows(a.rows);
+      if (r.errors.length) return { ok: false, msgs: r.errors };
+      return r.lines.length ? grade(task, r.lines, false) : { ok: false, msgs: ['No answer given.'] };
+    });
+    const score = results.filter(r => r.ok).length;
+    leaveExam(); $('task-card').hidden = true;
+    const yours = a => { if (a.noEntry) return '<p><b>No entry required</b></p>'; if (!answered(a)) return '<p><i>No answer</i></p>';
+      const r = readRows(a.rows); return r.lines.length ? entryHTML(r.lines) : '<p><i>Incomplete entry</i></p>'; };
+    const list = ex.items.map(({ type, task, answer }, i) => { const r = results[i];
+      return `<div class="rv-item ${r.ok ? 'ok' : 'bad'}"><div class="rv-head"><b class="rv-mark">${r.ok ? '✓ Correct' : '✗ Not correct'}</b> · Task ${i + 1} · Level ${type.level} · ${type.group}</div>
+        <div class="task-text">${task.text}</div>
+        <div class="rv-cols"><div><h4>Your answer</h4>${yours(answer)}</div><div><h4>Solution</h4>${task.noEntry ? '<p><b>No journal entry required.</b></p>' : entryHTML(task.lines)}</div></div>
+        ${!r.ok && r.msgs.length ? '<ul class="rv-msgs">' + r.msgs.map(m => `<li>${m}</li>`).join('') + '</ul>' : ''}
+        <p class="explain">${task.explain}</p></div>`; }).join('');
+    const buttons = `<div class="rv-buttons"><button class="primary" data-act="new">Start a new skill check</button><button data-act="again">Retake this skill check</button><button data-act="back">Back to practice</button></div>`;
+    const box = $('exam-review');
+    box.innerHTML = `<h2 style="margin:0">Skill check result</h2><p class="score">${score} of ${ex.items.length} correct</p>
+      <p class="exam-note" style="margin-top:0">${LEVELS[ex.level - 1].name} · Time: ${time} · <button class="link" id="copy-exam2" data-code="${ex.code}">Share this skill check</button></p>${buttons}${list}${buttons}`;
+    box.hidden = false;
+    $('copy-exam2').onclick = e => copyLink(e.target, '?test=' + ex.code);
+    box.querySelectorAll('[data-act]').forEach(b => { b.onclick = () => { const act = b.dataset.act;
+      if (act === 'new') startExam(ex.level); else if (act === 'again') startExam(ex.level, ex.seed); else { box.hidden = true; $('task-card').hidden = false; newTask(); } }; });
+    box.scrollIntoView({ block: 'start' });
+  }
+  $('btn-exam').onclick = () => startExam(curLevel());
+  $('exam-prev').onclick = () => goto(exam.idx - 1);
+  $('exam-next').onclick = () => goto(exam.idx + 1);
+  $('exam-nav').onclick = e => { const b = e.target.closest('button'); if (b) goto(+b.dataset.i); };
+  $('exam-finish').onclick = () => { saveAnswer(); const open = exam.items.filter(it => !answered(it.answer)).length;
+    arm($('exam-finish'), open ? `${open} unanswered · click again to finish` : 'Click again to finish', finishExam); };
+  $('exam-cancel').onclick = () => arm($('exam-cancel'), 'Click again to cancel (answers are lost)', () => { leaveExam(); newTask(); });
+  // start: a link with ?task= or ?exam= recreates that task or exam; afterwards the address is plain again
+  const params = new URLSearchParams(location.search), qTask = params.get('task'), qExam = params.get('test') || params.get('exam');
+  if (qTask || qExam) history.replaceState(null, '', location.pathname + location.hash);
+  const OLD = 'was created with an earlier version of Ledger Lab and can no longer be recreated.';
+  if (qExam) {
+    const r = decodeExam(qExam);
+    if (r.error) { newTask(); showNotice(r.error === 'version' ? `This skill check link ${OLD} Here is a new task instead.` : 'This skill check link is not valid. Here is a new task instead.'); }
+    else { lvlSel.value = r.level; buildTopics(); newTask(); startExam(r.level, r.seed); }
+  } else if (qTask) {
+    const r = decodeTask(qTask);
+    if (r.error) { newTask(); showNotice(r.error === 'version' ? `This task link ${OLD} Here is a new task instead.` : 'This task link is not valid. Here is a new task instead.'); }
+    else { lvlSel.value = r.type.level; buildTopics(); sel.value = r.type.id; showTask(r); }
+  } else newTask();
 }
 </script>
 <script data-goatcounter="https://tillmuenster.goatcounter.com/count"
