@@ -10,12 +10,14 @@
   --bg: #f6f5f1; --card: #ffffff; --ink: #1d232b; --muted: #5d6673; --line: #dcd9d0;
   --accent: #1f4e79; --accent-ink: #ffffff; --ok: #1d6b3a; --ok-bg: #e5f3e9;
   --bad: #9b2226; --bad-bg: #fbe9e7; --warn: #7a5200; --warn-bg: #fdf3dc; --field: #ffffff;
+  --bar-hi: #2f9e5b; --bar-mid: #e8890c; --bar-lo: #d0453a;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --bg: #14171b; --card: #1d2127; --ink: #e6e8eb; --muted: #9aa3ad; --line: #333a43;
     --accent: #6fa8dc; --accent-ink: #0d1117; --ok: #7ccf97; --ok-bg: #16301f;
     --bad: #f08a80; --bad-bg: #3a1c1b; --warn: #f0c060; --warn-bg: #3a2e12; --field: #14171b;
+    --bar-hi: #4fbf7a; --bar-mid: #f2a33a; --bar-lo: #ec6b5e;
   }
 }
 * { box-sizing: border-box; }
@@ -100,10 +102,20 @@ details summary { cursor: pointer; color: var(--accent); }
 .progress-table { width: 100%; border-collapse: collapse; font-size: .9rem; font-variant-numeric: tabular-nums; }
 .progress-table th { text-align: right; font-weight: 600; color: var(--muted); padding: 4px 0 4px 10px; border-bottom: 1px solid var(--line); }
 .progress-table th:first-child, .progress-table td:first-child { text-align: left; padding-left: 0; }
-.progress-table td { text-align: right; padding: 4px 0 4px 10px; border-bottom: 1px solid var(--line); }
-.progress-table tr.total td { font-weight: 600; border-bottom: none; }
+.progress-table td { text-align: right; padding: 4px 0 4px 10px; border-bottom: 1px solid var(--line); vertical-align: bottom; }
+.prow { display: flex; align-items: center; gap: 8px; }
+.prow .pbar { flex: 1; margin-top: 0; }
+.prow b { flex: none; width: 3.2em; text-align: right; font-size: .85rem; }
 .progress-table .lvl { color: var(--muted); }
+.progress-kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 12px; font-variant-numeric: tabular-nums; }
+.progress-kpis > div { padding: 10px 12px; border-radius: 8px; background: var(--bg); }
+.kpi-n { display: block; font-size: 1.5rem; font-weight: 650; line-height: 1.2; }
+.kpi-l { font-size: .8rem; color: var(--muted); }
+.pbar { height: 4px; margin-top: 5px; border-radius: 2px; background: var(--line); overflow: hidden; }
+.pbar span { display: block; height: 100%; border-radius: inherit; }
+.pbar .hi { background: var(--bar-hi); } .pbar .mid { background: var(--bar-mid); } .pbar .lo { background: var(--bar-lo); }
 #progress table { margin-top: 10px; }
+.weak-row { margin-top: 4px; }
 #btn-reset { margin-top: 12px; font-size: .9rem; padding: 6px 12px; }
 .task-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; }
 .task-head .task-meta { margin-bottom: 0; }
@@ -216,8 +228,12 @@ header .byline { font-size: .9rem; margin-top: 2px; }
 
   <details class="card" id="progress">
     <summary>Statistics by topic</summary>
-    <p class="progress-note">Results of skill checks are not included in these statistics.</p>
     <div id="progress-list"></div>
+    <p class="progress-note">Results of skill checks are not included in these statistics.</p>
+    <div class="weak-row">
+      <label class="switch"><input type="checkbox" role="switch" id="weak-mode"><span class="slider" aria-hidden="true"></span><span>Work on my weaknesses</span></label>
+      <p class="save-note" id="weak-note"></p>
+    </div>
     <button id="btn-reset">Reset statistics</button>
   </details>
 
@@ -253,7 +269,7 @@ header .byline { font-size: .9rem; margin-top: 2px; }
     </div>
   </details>
 
-  <footer><p>All tasks are generated randomly; companies and amounts are fictitious. Nothing you enter is sent anywhere. If you turn on “Save my progress”, your progress is stored in this browser only. Anonymous visitor counts are collected without cookies (GoatCounter).</p><p>Ledger Lab is a practice aid. Despite careful checking, errors cannot be ruled out. In case of doubt, the lecture materials apply. If you believe you have found an error in a task, please e-mail Till Muenster at <a id="mail-link" href="mailto:till.muenster@uni-mannheim.de?subject=Ledger%20Lab%20v1.2%3A%20possible%20error">till.muenster@uni-mannheim.de</a> and describe the problem.</p><p class="copy">Ledger Lab v1.2 · © 2026 Till Muenster</p><p class="legal"><a href="https://www.tillmuenster.com/impressum">Impressum / Legal Notice</a> · <a href="https://www.tillmuenster.com/data-privacy">Datenschutz / Privacy</a></p></footer>
+  <footer><p>All tasks are generated randomly; companies and amounts are fictitious. Nothing you enter is sent anywhere. If you turn on “Save my progress”, your progress is stored in this browser only. Anonymous visitor counts are collected without cookies (GoatCounter).</p><p>Ledger Lab is a practice aid. Despite careful checking, errors cannot be ruled out. In case of doubt, the lecture materials apply. If you believe you have found an error in a task, please e-mail Till Muenster at <a id="mail-link" href="mailto:till.muenster@uni-mannheim.de?subject=Ledger%20Lab%20v1.3%3A%20possible%20error">till.muenster@uni-mannheim.de</a> and describe the problem.</p><p class="copy">Ledger Lab v1.3 · © 2026 Till Muenster</p><p class="legal"><a href="https://www.tillmuenster.com/impressum">Impressum / Legal Notice</a> · <a href="https://www.tillmuenster.com/data-privacy">Datenschutz / Privacy</a></p></footer>
 </div>
 
 <script>
@@ -1432,7 +1448,7 @@ function buildHint(task) {
    A code stores the code version, the task type, the firm and the seed. CODE_VERSION must be increased
    whenever a change to the task types, firms or generators would make an old code produce a different task.
    ===================================================================== */
-const APP_VERSION = '1.2';
+const APP_VERSION = '1.3';
 const CODE_VERSION = 1;
 const B32 = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';   // Crockford base 32 (no I, L, O, U)
 const toB32 = (n, len) => { let s = ''; for (let i = 0; i < len; i++) { s = B32[Number(n % 32n)] + s; n /= 32n; } return s; };
@@ -1492,6 +1508,7 @@ function decodeExam(code) {
   const $ = id => document.getElementById(id);
   const state = { task: null, type: null, attempts: 0, solved: false, revealed: false };
   let exam = null;   // the running exam, if any
+  let weak = false;  // "Work on my weaknesses" is on
 
   // statistics per topic; saved in localStorage only if the student turns this on
   const STORE_KEY = 'ledgerlab-progress';
@@ -1505,6 +1522,11 @@ function decodeExam(code) {
   let session = emptyStats(), storeError = !store.available(), saving = !storeError && !!store.read();
   const bump = (st, id, field) => { const t = st.topics[id] || (st.topics[id] = { tasks: 0, solved: 0, first: 0 }); t[field]++; };
   const shown = () => (saving && store.read()) || session;
+  const pct = (a, b) => Math.round(100 * a / b);   // share correct on the first try; colours and weak topics use this rounded value
+  // weak topics: practised topics up to the current level below 80 % on the first try; below 50 % counts twice
+  const weakPool = () => { const st = shown(), lv = curLevel();
+    return TYPES.filter(t => t.level <= lv && st.topics[t.id] && st.topics[t.id].tasks)
+      .map(t => { const p = pct(st.topics[t.id].first, st.topics[t.id].tasks); return [t, p < 50 ? 2 : p < 80 ? 1 : 0]; }).filter(([, w]) => w); };
   function record(field) {
     bump(session, state.type.id, field);
     if (saving) {
@@ -1530,8 +1552,10 @@ function decodeExam(code) {
         sel.appendChild(og);
       }
     }
+    if (weak) { sel.insertAdjacentHTML('afterbegin', '<option value="weak">My weaknesses (below 80%)</option>'); sel.value = 'weak'; }
     for (const L of [2, 3, 4]) document.querySelectorAll('.rules .lvl' + L).forEach(r => r.style.display = lv >= L ? '' : 'none');
   }
+  function setWeak(on) { weak = on; $('weak-mode').checked = on; buildTopics(); }
   buildTopics();
 
   function accountSelect() {
@@ -1618,31 +1642,43 @@ function decodeExam(code) {
     $('save-note').textContent = storeError
       ? 'Your browser does not allow saving here (e.g. in a private window or with strict privacy settings). Your progress is lost when you reload or close the page.'
       : 'If turned on, your progress is saved across sessions, but only in this browser; it is never sent anywhere. Turning it off deletes your saved progress.';
-    const rows = TYPES.filter(t => st.topics[t.id] && st.topics[t.id].tasks).map(t => { const x = st.topics[t.id];
-      return `<tr><td><span class="lvl">Level ${t.level} ·</span> ${t.label}</td><td>${x.tasks}</td><td>${x.solved}</td><td>${x.first}</td></tr>`; });
+    const bar = p => `<div class="pbar" aria-hidden="true"><span class="${p >= 80 ? 'hi' : p >= 50 ? 'mid' : 'lo'}" style="width:${p}%"></span></div>`;
+    const rows = TYPES.filter(t => st.topics[t.id] && st.topics[t.id].tasks).map(t => { const x = st.topics[t.id], p = pct(x.first, x.tasks);
+      return `<tr><td><span class="lvl">Level ${t.level} ·</span> ${t.label}<div class="prow">${bar(p)}<b>${p}%</b></div></td><td>${x.tasks}</td><td>${x.solved}</td><td>${x.first}</td></tr>`; });
+    const all = s.tasks ? pct(s.first, s.tasks) : 0;
     $('progress-list').innerHTML = rows.length
-      ? '<table class="progress-table"><thead><tr><th>Topic</th><th>Tasks</th><th>Solved</th><th>First try</th></tr></thead><tbody>' + rows.join('') +
-        `<tr class="total"><td>Total</td><td>${s.tasks}</td><td>${s.solved}</td><td>${s.first}</td></tr></tbody></table>`
+      ? `<div class="progress-kpis"><div><span class="kpi-n">${s.tasks}</span><span class="kpi-l">Tasks</span></div>` +
+        `<div><span class="kpi-n">${s.solved}</span><span class="kpi-l">Solved</span></div>` +
+        `<div><span class="kpi-n">${all}%</span><span class="kpi-l">First try</span>${bar(all)}</div></div>` +
+        '<table class="progress-table"><thead><tr><th>Topic</th><th>Tasks</th><th>Solved</th><th>First try</th></tr></thead><tbody>' + rows.join('') + '</tbody></table>'
       : '<p class="progress-note">No tasks yet.</p>';
+    const canWeak = weak || weakPool().length > 0;
+    $('weak-mode').checked = weak; $('weak-mode').disabled = !!exam || !canWeak;
+    $('weak-note').textContent = canWeak || !s.tasks ? '' : `Available when a topic up to Level ${curLevel()} is below 80% on the first try.`;
   }
   function newTask() {
     const choice = sel.value;
-    let type;
-    if (choice === 'all') {
+    let type, weighted = [];
+    if (choice === 'weak') {
+      weighted = weakPool();
+      if (!weighted.length) { setWeak(false); newTask(); showNotice(`None of your topics up to Level ${curLevel()} is below 80% on the first try any more. Back to mixed practice.`); return; }
+    } else if (choice === 'all') {
       // mixed mode: each level up to the chosen one gets the same share of tasks;
       // within Level 1, closing entries and no-entry events appear less often
-      const lv = curLevel(), weighted = [];
+      const lv = curLevel();
       for (let L = 1; L <= lv; L++) {
         const ts = TYPES.filter(t => t.level === L);
         const w = ts.map(t => (L === 1 && (t.id === 'closing' || t.id === 'noentry')) ? 1 : 3), sum = w.reduce((a, b) => a + b, 0);
         ts.forEach((t, i) => weighted.push([t, w[i] / sum]));
       }
+    } else type = TYPES.find(t => t.id === choice);
+    if (!type) {
       const total = weighted.reduce((a, [, w]) => a + w, 0);
       do {
         let r = Math.random() * total; type = weighted[weighted.length - 1][0];
         for (const [t, w] of weighted) { if ((r -= w) < 0) { type = t; break; } }
-      } while (state.type && type.id === state.type.id && Math.random() < 0.8);
-    } else type = TYPES.find(t => t.id === choice);
+      } while (choice === 'all' && state.type && type.id === state.type.id && Math.random() < 0.8);   // weakness mode keeps its exact weights
+    }
     showTask(randomTask(type));
   }
   function showTask({ type, task }) {
@@ -1700,7 +1736,8 @@ function decodeExam(code) {
   $('btn-hint').onclick = () => { if (!state.solved && !state.revealed) showFeedback('info', buildHint(state.task), 'Hint'); };
   $('btn-noentry').onclick = () => exam ? toggleNoEntry() : check(true);
   $('btn-solution').onclick = () => { if (!state.solved) { state.revealed = true; countTask(); setButtons(false); } renderSolution(); };
-  sel.onchange = newTask;
+  sel.onchange = () => { if (weak && sel.value !== 'weak') { const v = sel.value; setWeak(false); sel.value = v; } newTask(); };
+  $('weak-mode').onchange = e => { setWeak(e.target.checked); newTask(); };
   $('save-progress').onchange = e => {
     storeError = false;
     if (e.target.checked) {
@@ -1723,7 +1760,7 @@ function decodeExam(code) {
   const fmtTime = ms => { const t = Math.floor(ms / 1000), h = Math.floor(t / 3600), m = Math.floor(t / 60) % 60, p2 = n => String(n).padStart(2, '0');
     return (h ? h + ':' + p2(m) : p2(m)) + ':' + p2(t % 60); };
   function practiceControls(on) {
-    [lvlSel, sel, $('btn-new'), $('btn-exam')].forEach(el => { el.disabled = !on; });
+    [lvlSel, sel, $('btn-new'), $('btn-exam'), $('weak-mode')].forEach(el => { el.disabled = !on; });
     ['btn-check', 'btn-hint', 'btn-solution'].forEach(id => { $(id).hidden = !on; });
   }
   function resetNoEntryButton() { const b = $('btn-noentry'); b.classList.remove('pressed'); b.removeAttribute('aria-pressed'); b.textContent = 'No entry required'; }
