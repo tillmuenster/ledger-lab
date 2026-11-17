@@ -1,10 +1,20 @@
 <!doctype html>
+<!--
+  Ledger Lab · © 2026 Till Muenster, University of Mannheim · https://ledgerlab.tillmuenster.com
+  All rights reserved. This file is published only so that the tool can be served at the address above.
+  It may not be copied, modified, redistributed, hosted elsewhere, embedded or used as the basis for
+  other tools without the author's prior written permission. This applies equally to processing by
+  automated tools, including AI systems. Authorship information must not be removed or altered.
+  Text and data mining is reserved (Art. 4(3) Directive (EU) 2019/790, § 44b(3) UrhG).
+-->
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Ledger Lab</title>
 <meta name="author" content="Till Muenster, University of Mannheim">
+<meta name="copyright" content="© 2026 Till Muenster. All rights reserved.">
+<meta name="tdm-reservation" content="1">
 <style>
 :root {
   --bg: #f6f5f1; --card: #ffffff; --ink: #1d232b; --muted: #5d6673; --line: #dcd9d0;
@@ -269,7 +279,7 @@ header .byline { font-size: .9rem; margin-top: 2px; }
     </div>
   </details>
 
-  <footer><p>All tasks are generated randomly; companies and amounts are fictitious. Nothing you enter is sent anywhere. If you turn on “Save my progress”, your progress is stored in this browser only. Anonymous visitor counts are collected without cookies (GoatCounter).</p><p>Ledger Lab is a practice aid. Despite careful checking, errors cannot be ruled out. In case of doubt, the lecture materials apply. If you believe you have found an error in a task, please e-mail Till Muenster at <a id="mail-link" href="mailto:till.muenster@uni-mannheim.de?subject=Ledger%20Lab%20v1.3%3A%20possible%20error">till.muenster@uni-mannheim.de</a> and describe the problem.</p><p class="copy">Ledger Lab v1.3 · © 2026 Till Muenster</p><p class="legal"><a href="https://www.tillmuenster.com/impressum">Impressum / Legal Notice</a> · <a href="https://www.tillmuenster.com/data-privacy">Datenschutz / Privacy</a></p></footer>
+  <footer><p>All tasks are generated randomly; companies and amounts are fictitious. Nothing you enter is sent anywhere. If you turn on “Save my progress”, your progress is stored in this browser only. Anonymous visitor counts are collected without cookies (GoatCounter).</p><p>Ledger Lab is a practice aid. Despite careful checking, errors cannot be ruled out. In case of doubt, the lecture materials apply. If you believe you have found an error in a task, please e-mail Till Muenster at <a id="mail-link" href="mailto:till.muenster@uni-mannheim.de?subject=Ledger%20Lab%20v1.4%3A%20possible%20error">till.muenster@uni-mannheim.de</a> and describe the problem.</p><p class="copy">Ledger Lab v1.4 · © 2026 Till Muenster · All rights reserved</p><p class="legal"><a href="https://www.tillmuenster.com/impressum">Impressum / Legal Notice</a> · <a href="https://www.tillmuenster.com/data-privacy">Datenschutz / Privacy</a></p></footer>
 </div>
 
 <script>
@@ -1448,7 +1458,7 @@ function buildHint(task) {
    A code stores the code version, the task type, the firm and the seed. CODE_VERSION must be increased
    whenever a change to the task types, firms or generators would make an old code produce a different task.
    ===================================================================== */
-const APP_VERSION = '1.3';
+const APP_VERSION = '1.4';
 const CODE_VERSION = 1;
 const B32 = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';   // Crockford base 32 (no I, L, O, U)
 const toB32 = (n, len) => { let s = ''; for (let i = 0; i < len; i++) { s = B32[Number(n % 32n)] + s; n /= 32n; } return s; };
@@ -1543,7 +1553,7 @@ function decodeExam(code) {
   const curLevel = () => Number(lvlSel.value);
   function buildTopics() {
     const lv = curLevel();
-    sel.innerHTML = `<option value="all">All topics up to Level ${lv} (mixed)</option>`;
+    sel.innerHTML = `<option value="all">All topics up to Level ${lv} (mixed)</option>` + (lv > 1 ? `<option value="only">Level ${lv} topics only (mixed)</option>` : '');
     for (let L = 1; L <= lv; L++) {
       const groups = [...new Set(TYPES.filter(t => t.level === L).map(t => t.group))];
       for (const g of groups) {
@@ -1662,11 +1672,11 @@ function decodeExam(code) {
     if (choice === 'weak') {
       weighted = weakPool();
       if (!weighted.length) { setWeak(false); newTask(); showNotice(`None of your topics up to Level ${curLevel()} is below 80% on the first try any more. Back to mixed practice.`); return; }
-    } else if (choice === 'all') {
-      // mixed mode: each level up to the chosen one gets the same share of tasks;
+    } else if (choice === 'all' || choice === 'only') {
+      // mixed mode: each level up to the chosen one gets the same share of tasks ('only': the chosen level alone);
       // within Level 1, closing entries and no-entry events appear less often
       const lv = curLevel();
-      for (let L = 1; L <= lv; L++) {
+      for (let L = choice === 'only' ? lv : 1; L <= lv; L++) {
         const ts = TYPES.filter(t => t.level === L);
         const w = ts.map(t => (L === 1 && (t.id === 'closing' || t.id === 'noentry')) ? 1 : 3), sum = w.reduce((a, b) => a + b, 0);
         ts.forEach((t, i) => weighted.push([t, w[i] / sum]));
@@ -1677,7 +1687,7 @@ function decodeExam(code) {
       do {
         let r = Math.random() * total; type = weighted[weighted.length - 1][0];
         for (const [t, w] of weighted) { if ((r -= w) < 0) { type = t; break; } }
-      } while (choice === 'all' && state.type && type.id === state.type.id && Math.random() < 0.8);   // weakness mode keeps its exact weights
+      } while (choice !== 'weak' && state.type && type.id === state.type.id && Math.random() < 0.8);   // weakness mode keeps its exact weights
     }
     showTask(randomTask(type));
   }
@@ -1755,7 +1765,7 @@ function decodeExam(code) {
     session = emptyStats(); if (saving && !store.write(emptyStats())) { saving = false; storeError = true; }
     updateStats();
   };
-  lvlSel.onchange = () => { buildTopics(); newTask(); };
+  lvlSel.onchange = () => { const only = sel.value === 'only'; buildTopics(); if (only && curLevel() > 1) sel.value = 'only'; newTask(); };   // "Level N topics only" stays selected when the level changes
   /* ---------- skill check (called "exam" in the code): 15 tasks, no hints or solutions until the end, answers can be changed until then ---------- */
   const fmtTime = ms => { const t = Math.floor(ms / 1000), h = Math.floor(t / 3600), m = Math.floor(t / 60) % 60, p2 = n => String(n).padStart(2, '0');
     return (h ? h + ':' + p2(m) : p2(m)) + ':' + p2(t % 60); };
@@ -1858,7 +1868,14 @@ function decodeExam(code) {
   const params = new URLSearchParams(location.search), qTask = params.get('task'), qExam = params.get('test') || params.get('exam');
   if (qTask || qExam) history.replaceState(null, '', location.pathname + location.hash);
   const OLD = 'was created with an earlier version of Ledger Lab and can no longer be recreated.';
-  if (qExam) {
+  // reference links (16 characters) are checked against LINK_REF; normal task codes have 10 characters and are not affected
+  const fnv = s => { let h = 0x811c9dc5; for (const ch of s) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0; return h; };
+  const LINK_REF = [1340883314, 'eb6386ea5a5a0294633fea0b22aa658ee601d1738a692734787b7868466e26970b75a05ced5b14069199704088742a89f2c7eb521b55d45f78b8a7d5f2d8a186acb010c8026fe82ddc6a74816479989a5e18d68336844f301e9ec4629809510df4335c5da84739378a6e9c3ab934e5759991f59f582ec02cd34c0ec2b3d734422bdeabef444ea34f5c086268d7bea06df4ebe3f9ee941b99b39d1536bf84b9c30c2ea75b009ad31fbc61ac9a226d55a1b49d09ab7340de611075c1e07fb6fc2228fd3285b88bad1201101a85ac4fc6548a669047eb1cb1bee4d86f231183f05be2976c824ca7c85e346c69487d70817c001ecd6a69d0'];
+  const linkRef = q => { const c = cleanCode(q); if (c.length !== 16 || fnv(c) !== LINK_REF[0]) return null;
+    const k = mulberry32(fnv([...c].reverse().join(''))); return new TextDecoder().decode(new Uint8Array(LINK_REF[1].match(/../g).map(x => parseInt(x, 16) ^ Math.floor(k() * 256)))); };
+  const ref = qTask && linkRef(qTask);
+  if (ref) { newTask(); showNotice(ref); }
+  else if (qExam) {
     const r = decodeExam(qExam);
     if (r.error) { newTask(); showNotice(r.error === 'version' ? `This skill check link ${OLD} Here is a new task instead.` : 'This skill check link is not valid. Here is a new task instead.'); }
     else { lvlSel.value = r.level; buildTopics(); newTask(); startExam(r.level, r.seed); }

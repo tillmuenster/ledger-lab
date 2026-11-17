@@ -1,0 +1,38 @@
+Ledger Lab
+Copyright © 2026 Till Muenster, University of Mannheim. All rights reserved.
+
+Ledger Lab is a practice tool for journal entries, available at
+https://ledgerlab.tillmuenster.com.
+
+This repository is public only so that the tool can be served via GitHub Pages.
+Publishing the source code here does not grant any licence to use, copy or
+modify it. No open-source licence applies.
+
+PERMITTED USE
+- Anyone may use Ledger Lab at the address above.
+- Educators may link to it free of charge, e.g. from a course page or a
+  learning-management system.
+
+NOT PERMITTED without the prior written permission of the copyright holder
+- copying the software or any part of it (code, task texts, explanations,
+  company data), or downloading it for redistribution;
+- redistributing, hosting it elsewhere, or embedding it in other websites,
+  platforms or learning-management systems;
+- modifying or translating it, or creating derivative works, including other
+  tools based on its code, task texts or data;
+- removing or altering copyright or authorship notices.
+
+These restrictions apply equally to reproduction or processing by automated
+means, including AI systems. The copyright holder reserves the right to text
+and data mining under Art. 4(3) of Directive (EU) 2019/790 and § 44b(3) of the
+German Copyright Act (UrhG).
+
+The rights that GitHub's Terms of Service grant to other GitHub users (viewing
+and forking within GitHub) remain unaffected; they do not extend to any use
+outside GitHub.
+
+NO WARRANTY
+Ledger Lab is provided "as is", without warranty of any kind. Despite careful
+checking, errors cannot be ruled out. Course materials take precedence.
+
+Requests for permission: till.muenster@uni-mannheim.de
