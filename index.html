@@ -12,21 +12,26 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Ledger Lab</title>
+<link rel="icon" type="image/png" sizes="32x32" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAB5klEQVR4nOyXO0gcURSG/3tnEEISME2IxhjyaIQEEkGwVxAVH5XFig/Uys5O0FLBzk4s1E4RLVwfoIKWgiDogoogvsC31SKKq+gczxF3UXbXRbzObOFX3T1z9p5/7jnDzG/jAanl5akf3t00KYVcgvqngM8wAAEnChQgwvzZhdUZ9PuD4WsqvMioLClUjurhSDpeE8IBaWrY6x+fjAj45isuAKwpuAgpKhIRKtNX/IlgrXIsDW4iJ3F9+VffkK5xvbjArSY7pdrWPHDwCKmteUI9EyC1bQX1PdbF3Kw/MMn82kpUTGrb8f4w1NoOk2RWlsWMa3iM5wLitqCirQVP0VHfiJ9pX+/WW4f7aO7tglEBsYbmIeehUGR9FrpImB+P5G2B8ONLOn7dH3OYTT7u7aMDI/kJBchmedk5j4OLiLvhc/MTChD1skFUzFB+QgGi/Cn1L80XknsI8//nRPV0dnEBM0sLMEVyn4Dcqcm7jcXbyygJBBAdwyu4tsrwlU6xOSiAB/A34TS3gALwDAroa8fq5lUQ7hOU2vpo0L9DjlMH16FaqX33FOwNToyIVxO7hNdGLBnX2h0YH5WfVjh+ury+oX9n9aXYzhXb80u25x95ON/DAPf2fI7teT/b86qT4bHI99stAAAA//9+869TAAAABklEQVQDANzQv6d8htxDAAAAAElFTkSuQmCC">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"%3E%3Crect width="32" height="32" rx="7" fill="%231d5a4e"/%3E%3Cpath d="M6 9.5h20M16 9.5V26" stroke="%23fff" stroke-width="3.6" fill="none"/%3E%3Cpath d="M7.5 15.5h5M7.5 20h5M19.5 15.5h5" stroke="%23fff" stroke-width="1.8" stroke-opacity=".6"/%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAAC0CAIAAACyr5FlAAADGElEQVR4nOzdP2ueVRyA4aPUWhuIQ0Ol1lJ0qtZNqAoOTuJiBweHgpPd/QAuHdzFVbu5OAURRHDRoYgWHASrBcFa0P4xtWkUqjUO5gN4S4lP3jck1/UFHjjc8IPznMPZc+TUyQH/5t4BQRwkcZDEQRIHSRwkcZDEQRIHSRwkcZDEQRIHSRwkcZDEQRIHSRwkcZDEQRIHSRwkcZDEQRIHSRwkcZDEQRIHSRwkcZDEQRIHSRwkcZDEQRIHSRwkcZDEQRIHSRykPWPrPXH00TOvnh5M58x7Z7+9fGlssVnEsbh/4ZnHnxxMZ2NJx9YzVkjiIImDJA6SOEjiIImDJA6SOEjiIImDJA6SOEjiIImDJA6SOEjiIM3imOBPK7+8tfz+2AYW9y+89uJLY7POfvzh73/cHtvAxpKOrXfPkVMnx67xyNLBz99+d2zWs6+f/vnGytg1jBWSOEjiIImDJA6SOEjiIImDJA6SOEjiIImDJA6SOEjiIImDJA7SLI4J/oeXn3v+wOKDY1KffHX+8vWrY7aOPnTohadOjEn9+tva8rnPxvzMOY7DSwcfPrA0JrWwb9+YuY2PPnbo8JjUvr33j7kyVkjiIImDJA6SOEjiIImDJA7SnDfBls99unfPfWNS11dvjpn78drVdz76YEzqr7/Xx1zNOY4dcy/59p0/L127MnYWY4UkDpI4SOIgiYMkDpI4SOIgiYMkDpI4SOIgiYM057+yJ44dX3xg/5jU1z98v7J2a/C/zTmOp48dn/xS05WbN8QxCWOFJA6SOEjiIImDJA6SOEjiIM15E+zLixcm3yFdubU6mMKc4zh/8cJguzJWSOIgiYMkDpI4SOIgiYMkDpI4SOIgiYMkDpI4SOIgiYMkDpI4SOIgiYMkDpI4SOIgiYMkDpI4SOIgiYM057uyM7aytvrKm2+MzdoxzxXepd0Vx5319S+++2Zwd4wVkjhI4iCJgyQOkjhI4iCJgyQOkjhI4iCJgyQOkjhI4iCJgyQOkjhI4iCJgyQOkjhI4iCJgyQOkjhI4iCJgyQOkjhI4iCJg/QPAAAA//+kEAG9AAAABklEQVQDAKp7X8EdUKYDAAAAAElFTkSuQmCC">
 <meta name="author" content="Till Muenster, University of Mannheim">
 <meta name="copyright" content="© 2026 Till Muenster. All rights reserved.">
 <meta name="tdm-reservation" content="1">
 <style>
 :root {
-  --bg: #f6f5f1; --card: #ffffff; --ink: #1d232b; --muted: #5d6673; --line: #dcd9d0;
-  --accent: #1f4e79; --accent-ink: #ffffff; --ok: #1d6b3a; --ok-bg: #e5f3e9;
-  --bad: #9b2226; --bad-bg: #fbe9e7; --warn: #7a5200; --warn-bg: #fdf3dc; --field: #ffffff;
+  --bg: #f4f2ec; --card: #fffefa; --ink: #1b1f1d; --muted: #5f6763; --line: #dbd6ca; --rule: #1b1f1d;
+  --accent: #1d5a4e; --accent-ink: #ffffff; --ok: #1d6b3c; --ok-bg: #edf5ef;
+  --bad: #a3252b; --bad-bg: #faefed; --warn: #7a5200; --warn-bg: #fbf3e1; --field: #fffefa;
+  --tint: rgba(29, 90, 78, .07);
   --bar-hi: #2f9e5b; --bar-mid: #e8890c; --bar-lo: #d0453a;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #14171b; --card: #1d2127; --ink: #e6e8eb; --muted: #9aa3ad; --line: #333a43;
-    --accent: #6fa8dc; --accent-ink: #0d1117; --ok: #7ccf97; --ok-bg: #16301f;
-    --bad: #f08a80; --bad-bg: #3a1c1b; --warn: #f0c060; --warn-bg: #3a2e12; --field: #14171b;
+    --bg: #111413; --card: #191d1b; --ink: #e8e6df; --muted: #9ca59f; --line: #313833; --rule: #cfccc4;
+    --accent: #7dc3ad; --accent-ink: #0e1311; --ok: #86d1a0; --ok-bg: #14281c;
+    --bad: #f1958c; --bad-bg: #321a1a; --warn: #f0c060; --warn-bg: #352a12; --field: #191d1b;
+    --tint: rgba(125, 195, 173, .09);
     --bar-hi: #4fbf7a; --bar-mid: #f2a33a; --bar-lo: #ec6b5e;
   }
 }
@@ -175,13 +180,109 @@ header .byline { font-size: .9rem; margin-top: 2px; }
   .stats { margin-left: 0; width: 100%; }
   .rv-cols { grid-template-columns: 1fr; }
 }
+
+/* ----- journal design: masthead, fewer boxes, journal-sheet entry table ----- */
+.wrap { max-width: 880px; padding-top: 32px; }
+header { padding-bottom: 14px; border-bottom: 3px solid var(--accent); }
+.brand { display: flex; align-items: center; gap: 10px; }
+.mark { width: 30px; height: 30px; color: var(--accent); flex: none; }
+header h1 { font-size: 2.1rem; font-weight: 700; letter-spacing: -.02em; margin: 0; line-height: 1.1; }
+header p { font-size: .95rem; margin-top: 8px; }
+header .byline { font-size: .95rem; margin-top: 0; }
+
+.card { border-radius: 3px; }
+header + .card { background: none; border: none; border-bottom: 1px solid var(--line); border-radius: 0; padding: 18px 0; margin-top: 0; }
+#task-card { border: 1px solid var(--line); border-top: 3px solid var(--accent); padding: 24px 28px 26px; margin-top: 24px; }
+details.card { background: none; border: 1px solid transparent; border-top-color: var(--line); border-radius: 3px; padding: 14px 28px; margin: 0; }
+details.card[open] { background: var(--card); border-color: var(--line); padding-bottom: 24px; } /* open sections become cards like the task */
+details.card[open] + details.card { margin-top: 14px; } /* gap depends only on the section above, so a title never moves when its own section opens */
+details.card[open] + details.card:not([open]) { border-top-color: transparent; }
+#task-card + #exam-review + details.card { margin-top: 28px; }
+details summary { font-size: 1.1rem; color: var(--ink); list-style: none; }
+details summary::-webkit-details-marker { display: none; }
+details summary::before { content: '+'; display: inline-block; width: 1.3em; color: var(--accent); font: 600 1.1rem/1 system-ui, sans-serif; }
+details[open] summary::before { content: '−'; }
+#exam-bar { border-top: 3px solid var(--accent); }
+
+/* level and topic dropdowns: side by side, labels above */
+.toolbar { gap: 14px 12px; }
+.field { flex: 1 1 calc(50% - 6px); flex-direction: column; align-items: stretch; gap: 5px; }
+.field label { width: auto; font-size: .82rem; font-weight: 600; color: var(--muted); }
+#topic, #level { width: 100%; }
+.toolbar select { -webkit-appearance: none; appearance: none; font-size: .95rem; padding: 9px 34px 9px 10px; border-radius: 3px; cursor: pointer;
+  background: var(--field) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='7'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23889089' stroke-width='1.6'/%3E%3C/svg%3E") no-repeat right 11px center;
+  border: 1px solid var(--line); }
+.toolbar select:hover { border-color: var(--muted); }
+.toolbar select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--tint); }
+@media (max-width: 860px) { .field { flex-basis: 100%; } } /* the longest names need ~360px; stack below that */
+
+.task-meta { text-transform: none; letter-spacing: 0; font-size: .88rem; font-weight: 600; color: var(--accent); }
+.task-text { font-size: 1.15rem; line-height: 1.55; }
+.books-note { font-style: italic; font-size: .8rem; }
+
+/* entry table as a journal sheet */
+table.entry { margin-top: 20px; }
+table.entry th { color: var(--ink); font-size: .82rem; padding: 6px 8px; border-bottom: 1.5px solid var(--rule); }
+table.entry th.col-amt { text-align: right; }
+table.entry td { padding: 0; border-bottom: 1px solid var(--line); }
+table.entry th:not(:first-child), table.entry td:not(:first-child) { border-left: 1px solid var(--line); } /* delete button gets its own ruled column */
+table.entry td:last-child { text-align: center; }
+table.entry select, table.entry input { border: none; border-radius: 0; background-color: transparent; padding: 11px 8px; }
+table.entry select { -webkit-appearance: none; appearance: none; padding-right: 28px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23889089' stroke-width='1.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 10px center; }
+table.entry select:focus, table.entry input:focus { outline: none; background-color: var(--tint); box-shadow: inset 0 -2px 0 var(--accent); }
+table.entry input { font-size: 1.02rem; }
+table.entry input::placeholder { opacity: .35; }
+table.entry tr:has(td:nth-child(3) input:not(:placeholder-shown)) td:first-child { padding-left: 2.2em; } /* credit lines indent like in a journal */
+table.entry button.link { color: var(--muted); }
+table.entry button.link:hover { color: var(--bad); }
+.below-entry { margin-top: 8px; }
+
+button, select, input { border-radius: 3px; }
+button.primary { padding: 8px 18px; }
+.actions { margin-top: 18px; }
+
+/* feedback: coloured rule on the left instead of a tinted box */
+.feedback, .feedback.ok, .feedback.bad, .feedback.info { border-radius: 0; border-left: 3px solid; color: var(--ink); background: var(--card); padding: 10px 16px; }
+.feedback.ok { border-color: var(--ok); } .feedback.ok h3 { color: var(--ok); }
+.feedback.bad { border-color: var(--bad); } .feedback.bad h3 { color: var(--bad); }
+.feedback.info { border-color: var(--warn); } .feedback.info h3 { color: var(--warn); }
+.feedback.ok h3::before { content: '✓  '; } .feedback.bad h3::before { content: '✗  '; }
+.notice { border-radius: 0; border-left: 3px solid var(--warn); }
+
+.solution { border-top: 1.5px solid var(--rule); }
+.solution h3 { font-size: 1.05rem; }
+.je { font-size: 1.02rem; }
+.je td.num { min-width: 100px; }
+.explain { line-height: 1.55; }
+
+.progress-kpis > div { background: none; border-radius: 0; border-top: 2px solid var(--rule); padding: 8px 0 0; }
+.kpi-n { font-size: 1.8rem; font-weight: 700; }
+.chip { border-radius: 2px; background: var(--card); }
+footer { border-top: 3px solid var(--accent); padding-top: 14px; margin-top: 40px; }
+
+@media (max-width: 560px) {
+  header h1 { font-size: 1.8rem; }
+  header p, header .byline { font-size: .85rem; }
+  #task-card { padding: 18px 16px 20px; }
+  details.card { padding-left: 16px; padding-right: 16px; }
+  table.entry td, table.entry td:not(:first-child) { border: none; }
+  table.entry tr { border-bottom: 1px solid var(--line); gap: 8px; padding: 12px 0; }
+  table.entry select, table.entry input { border: 1px solid var(--line); border-radius: 3px; background-color: var(--field); padding: 10px; } /* boxed fields on touch screens */
+  table.entry select { padding-right: 30px; }
+  table.entry select:focus, table.entry input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--tint); background-color: var(--field); }
+  table.entry td:last-child { align-self: center; }
+  .je { font-size: .95rem; }
+  .je td.num { min-width: 0; }
+}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
-    <h1>Ledger Lab</h1>
-    <p>ACC 300 · Introduction to Financial Accounting</p>
+    <div class="brand"><svg class="mark" viewBox="0 0 30 30" aria-hidden="true"><path d="M3 8h24M15 8v18" stroke="currentColor" stroke-width="3" fill="none"/><path d="M5 14h6M5 18h6M19 14h6" stroke="currentColor" stroke-width="1.5" opacity=".55"/></svg><h1>Ledger Lab</h1></div>
+    <p>ACC 300 • Introduction to Financial Accounting</p>
     <p class="byline">Developed by Till Muenster, University of Mannheim</p>
   </header>
 
@@ -194,7 +295,7 @@ header .byline { font-size: .9rem; margin-top: 2px; }
       <span class="stats" id="stats"></span>
     </div>
     <div class="save-row">
-      <label class="switch"><input type="checkbox" role="switch" id="save-progress"><span class="slider" aria-hidden="true"></span><span>Save my progress in this browser</span></label>
+      <label class="switch"><input type="checkbox" role="switch" id="save-progress"><span class="slider" aria-hidden="true"></span><span>Save my progress</span></label>
       <p class="save-note" id="save-note"></p>
     </div>
   </div>
@@ -279,7 +380,7 @@ header .byline { font-size: .9rem; margin-top: 2px; }
     </div>
   </details>
 
-  <footer><p>All tasks are generated randomly; companies and amounts are fictitious. Nothing you enter is sent anywhere. If you turn on “Save my progress”, your progress is stored in this browser only. Anonymous visitor counts are collected without cookies (GoatCounter).</p><p>Ledger Lab is a practice aid. Despite careful checking, errors cannot be ruled out. In case of doubt, the lecture materials apply. If you believe you have found an error in a task, please e-mail Till Muenster at <a id="mail-link" href="mailto:till.muenster@uni-mannheim.de?subject=Ledger%20Lab%20v1.4%3A%20possible%20error">till.muenster@uni-mannheim.de</a> and describe the problem.</p><p class="copy">Ledger Lab v1.4 · © 2026 Till Muenster · All rights reserved</p><p class="legal"><a href="https://www.tillmuenster.com/impressum">Impressum / Legal Notice</a> · <a href="https://www.tillmuenster.com/data-privacy">Datenschutz / Privacy</a></p></footer>
+  <footer><p>All tasks are generated randomly; companies and amounts are fictitious. Nothing you enter is sent anywhere. If you turn on “Save my progress”, your progress is stored in this browser only. Anonymous visitor counts are collected without cookies (GoatCounter).</p><p>Ledger Lab is a practice aid. Despite careful checking, errors cannot be ruled out. In case of doubt, the lecture materials apply. If you believe you have found an error in a task, please e-mail Till Muenster at <a id="mail-link" href="mailto:till.muenster@uni-mannheim.de?subject=Ledger%20Lab%20v1.5%3A%20possible%20error">till.muenster@uni-mannheim.de</a> and describe the problem.</p><p class="copy">Ledger Lab v1.5 • © <span id="copy-year">2026</span> Till Muenster • All rights reserved</p><p class="legal"><a href="https://www.tillmuenster.com/impressum">Impressum / Legal Notice</a> • <a href="https://www.tillmuenster.com/data-privacy">Datenschutz / Privacy</a></p></footer>
 </div>
 
 <script>
@@ -337,10 +438,10 @@ const ACCOUNTS = [
   { name: 'Impairment Loss', type: 'Expense', word: 'a loss account', look: 'loss', level: 3 },
 ].map(a => ({ level: 1, ...a }));
 const LEVELS = [
-  { n: 1, name: 'Level 1 – Journal Entry Basics' },
-  { n: 2, name: 'Level 2 – Advanced Revenue & Expense Recognition' },
-  { n: 3, name: 'Level 3 – Advanced Assets' },
-  { n: 4, name: 'Level 4 – Advanced Liabilities & Equity' },
+  { n: 1, name: 'Level 1: Journal entry basics' },
+  { n: 2, name: 'Level 2: Advanced revenue & expense recognition' },
+  { n: 3, name: 'Level 3: Advanced assets' },
+  { n: 4, name: 'Level 4: Advanced liabilities & equity' },
 ];
 const TYPE_GROUP = { Asset: 'Assets', Liability: 'Liabilities', Equity: "Shareholders' Equity", Revenue: 'Revenues', Expense: 'Expenses' };
 const groupLabel = (type, lvl) => lvl >= 3 && type === 'Revenue' ? 'Revenues and gains' : lvl >= 3 && type === 'Expense' ? 'Expenses and losses' : TYPE_GROUP[type];
@@ -1458,7 +1559,7 @@ function buildHint(task) {
    A code stores the code version, the task type, the firm and the seed. CODE_VERSION must be increased
    whenever a change to the task types, firms or generators would make an old code produce a different task.
    ===================================================================== */
-const APP_VERSION = '1.4';
+const APP_VERSION = '1.5';
 const CODE_VERSION = 1;
 const B32 = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';   // Crockford base 32 (no I, L, O, U)
 const toB32 = (n, len) => { let s = ''; for (let i = 0; i < len; i++) { s = B32[Number(n % 32n)] + s; n /= 32n; } return s; };
@@ -1636,14 +1737,15 @@ function decodeExam(code) {
         ? `<tr><td>Dr. ${a}</td><td class="num">${fmt(x)}</td><td></td></tr>`
         : `<tr><td class="cr">Cr. ${a}</td><td></td><td class="num">${fmt(x)}</td></tr>`)).join('') + '</table>';
     }
-    html += `<p class="explain">${t.explain}</p><button class="primary" id="btn-next">Next task</button>`;
+    html += `<p class="explain">${t.explain}</p><div class="actions"><button class="primary" id="btn-next">Next task</button><button id="btn-similar">Another task like this</button></div>`;
     box.innerHTML = html; box.className = 'solution show';
     $('btn-next').onclick = newTask;
+    $('btn-similar').onclick = () => showTask(randomTask(state.type));   // same task type, new firm and amounts; topic selection unchanged
   }
   function updateStats() {
     const st = shown(), s = { tasks: 0, solved: 0, first: 0 };
     for (const t of TYPES) { const x = st.topics[t.id]; if (x) { s.tasks += x.tasks; s.solved += x.solved; s.first += x.first; } }
-    $('stats').textContent = `Solved ${s.solved} of ${s.tasks} · ${s.first} on first try`;
+    $('stats').textContent = `Solved ${s.solved} of ${s.tasks} • ${s.first} on first try`;
     renderProgress(st, s);
   }
   function renderProgress(st, s) {
@@ -1651,10 +1753,10 @@ function decodeExam(code) {
     $('save-progress').disabled = !store.available();
     $('save-note').textContent = storeError
       ? 'Your browser does not allow saving here (e.g. in a private window or with strict privacy settings). Your progress is lost when you reload or close the page.'
-      : 'If turned on, your progress is saved across sessions, but only in this browser; it is never sent anywhere. Turning it off deletes your saved progress.';
+      : 'Turn on to save your progress across sessions (only in your browser; it is never sent anywhere). Turn off to delete your saved progress. Check your progress statistics below.';
     const bar = p => `<div class="pbar" aria-hidden="true"><span class="${p >= 80 ? 'hi' : p >= 50 ? 'mid' : 'lo'}" style="width:${p}%"></span></div>`;
     const rows = TYPES.filter(t => st.topics[t.id] && st.topics[t.id].tasks).map(t => { const x = st.topics[t.id], p = pct(x.first, x.tasks);
-      return `<tr><td><span class="lvl">Level ${t.level} ·</span> ${t.label}<div class="prow">${bar(p)}<b>${p}%</b></div></td><td>${x.tasks}</td><td>${x.solved}</td><td>${x.first}</td></tr>`; });
+      return `<tr><td><span class="lvl">Level ${t.level} •</span> ${t.label}<div class="prow">${bar(p)}<b>${p}%</b></div></td><td>${x.tasks}</td><td>${x.solved}</td><td>${x.first}</td></tr>`; });
     const all = s.tasks ? pct(s.first, s.tasks) : 0;
     $('progress-list').innerHTML = rows.length
       ? `<div class="progress-kpis"><div><span class="kpi-n">${s.tasks}</span><span class="kpi-l">Tasks</span></div>` +
@@ -1697,7 +1799,7 @@ function decodeExam(code) {
     state.attempts = 0; state.solved = false; state.revealed = false;
     state.counted = false; updateStats();
     $('notice').hidden = true;
-    $('task-meta').textContent = `Level ${type.level} · ${type.group}`;
+    $('task-meta').textContent = `Level ${type.level} • ${type.group}`;
     $('task-text').innerHTML = task.text;
     $('task-code').innerHTML = `<button class="link" id="copy-task" data-code="${task.code}">Share this task</button>`;
     $('copy-task').onclick = e => copyLink(e.target, '?task=' + task.code);
@@ -1781,9 +1883,9 @@ function decodeExam(code) {
     practiceControls(false); setButtons(true);
     $('exam-review').hidden = true; $('task-card').hidden = false; $('exam-bar').hidden = false; $('notice').hidden = true;
     $('feedback').className = 'feedback'; $('solution').className = 'solution';
-    $('exam-title').textContent = `Skill check · ${LEVELS[level - 1].name}`;
+    $('exam-title').textContent = `Skill check • ${LEVELS[level - 1].name}`;
     $('exam-nav').innerHTML = items.map((_, i) => `<button data-i="${i}" aria-label="Task ${i + 1}">${i + 1}</button>`).join('');
-    $('exam-note').innerHTML = `<span id="exam-count"></span> · Answers can be changed until you finish the skill check; hints and solutions follow at the end.<br><button class="link" id="copy-exam" data-code="${exam.code}">Share this skill check</button>`;
+    $('exam-note').innerHTML = `<span id="exam-count"></span> • Answers can be changed until you finish the skill check; hints and solutions follow at the end.<br><button class="link" id="copy-exam" data-code="${exam.code}">Share this skill check</button>`;
     $('copy-exam').onclick = e => copyLink(e.target, '?test=' + exam.code);
     const tick = () => { $('exam-timer').textContent = 'Time ' + fmtTime(Date.now() - exam.start); };
     tick(); exam.timer = setInterval(tick, 1000);
@@ -1796,7 +1898,7 @@ function decodeExam(code) {
     saveAnswer(); disarm();
     exam.idx = Math.max(0, Math.min(exam.items.length - 1, i));
     const { type, task, answer } = exam.items[exam.idx];
-    $('task-meta').textContent = `Task ${exam.idx + 1} of ${exam.items.length} · Level ${type.level} · ${type.group}`;
+    $('task-meta').textContent = `Task ${exam.idx + 1} of ${exam.items.length} • Level ${type.level} • ${type.group}`;
     $('task-text').innerHTML = task.text; $('task-code').innerHTML = '';
     $('rows').innerHTML = '';
     for (const r of answer.rows.length ? answer.rows : [['', '', ''], ['', '', '']]) {
@@ -1842,7 +1944,7 @@ function decodeExam(code) {
     const yours = a => { if (a.noEntry) return '<p><b>No entry required</b></p>'; if (!answered(a)) return '<p><i>No answer</i></p>';
       const r = readRows(a.rows); return r.lines.length ? entryHTML(r.lines) : '<p><i>Incomplete entry</i></p>'; };
     const list = ex.items.map(({ type, task, answer }, i) => { const r = results[i];
-      return `<div class="rv-item ${r.ok ? 'ok' : 'bad'}"><div class="rv-head"><b class="rv-mark">${r.ok ? '✓ Correct' : '✗ Not correct'}</b> · Task ${i + 1} · Level ${type.level} · ${type.group}</div>
+      return `<div class="rv-item ${r.ok ? 'ok' : 'bad'}"><div class="rv-head"><b class="rv-mark">${r.ok ? '✓ Correct' : '✗ Not correct'}</b> • Task ${i + 1} • Level ${type.level} • ${type.group}</div>
         <div class="task-text">${task.text}</div>
         <div class="rv-cols"><div><h4>Your answer</h4>${yours(answer)}</div><div><h4>Solution</h4>${task.noEntry ? '<p><b>No journal entry required.</b></p>' : entryHTML(task.lines)}</div></div>
         ${!r.ok && r.msgs.length ? '<ul class="rv-msgs">' + r.msgs.map(m => `<li>${m}</li>`).join('') + '</ul>' : ''}
@@ -1850,7 +1952,7 @@ function decodeExam(code) {
     const buttons = `<div class="rv-buttons"><button class="primary" data-act="new">Start a new skill check</button><button data-act="again">Retake this skill check</button><button data-act="back">Back to practice</button></div>`;
     const box = $('exam-review');
     box.innerHTML = `<h2 style="margin:0">Skill check result</h2><p class="score">${score} of ${ex.items.length} correct</p>
-      <p class="exam-note" style="margin-top:0">${LEVELS[ex.level - 1].name} · Time: ${time} · <button class="link" id="copy-exam2" data-code="${ex.code}">Share this skill check</button></p>${buttons}${list}${buttons}`;
+      <p class="exam-note" style="margin-top:0">${LEVELS[ex.level - 1].name} • Time: ${time} • <button class="link" id="copy-exam2" data-code="${ex.code}">Share this skill check</button></p>${buttons}${list}${buttons}`;
     box.hidden = false;
     $('copy-exam2').onclick = e => copyLink(e.target, '?test=' + ex.code);
     box.querySelectorAll('[data-act]').forEach(b => { b.onclick = () => { const act = b.dataset.act;
@@ -1862,8 +1964,10 @@ function decodeExam(code) {
   $('exam-next').onclick = () => goto(exam.idx + 1);
   $('exam-nav').onclick = e => { const b = e.target.closest('button'); if (b) goto(+b.dataset.i); };
   $('exam-finish').onclick = () => { saveAnswer(); const open = exam.items.filter(it => !answered(it.answer)).length;
-    arm($('exam-finish'), open ? `${open} unanswered · click again to finish` : 'Click again to finish', finishExam); };
+    arm($('exam-finish'), open ? `${open} unanswered • click again to finish` : 'Click again to finish', finishExam); };
   $('exam-cancel').onclick = () => arm($('exam-cancel'), 'Click again to cancel (answers are lost)', () => { leaveExam(); newTask(); });
+  const year = new Date().getFullYear();   // copyright year: 2026, a range from 2027 on
+  if (year > 2026) $('copy-year').textContent = '2026–' + year;
   // start: a link with ?task= or ?exam= recreates that task or exam; afterwards the address is plain again
   const params = new URLSearchParams(location.search), qTask = params.get('task'), qExam = params.get('test') || params.get('exam');
   if (qTask || qExam) history.replaceState(null, '', location.pathname + location.hash);
