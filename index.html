@@ -277,6 +277,46 @@ footer { border-top: 3px solid var(--accent); padding-top: 14px; margin-top: 40p
   .je { font-size: .95rem; }
   .je td.num { min-width: 0; }
 }
+
+/* ----- topic picker ("Choose topics…", v1.6): dialog with a checklist; full screen on phones ----- */
+.field-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.field-head button.link { font-size: .82rem; font-weight: 600; padding: 0; }
+html:has(dialog.pick[open]) { overflow: hidden; } /* the page behind the dialog does not scroll */
+dialog.pick { width: min(680px, calc(100% - 32px)); max-height: min(760px, calc(100% - 48px)); padding: 0; border: 1px solid var(--line); border-top: 3px solid var(--accent);
+  border-radius: 3px; background: var(--card); color: var(--ink); box-shadow: 0 18px 50px rgba(0, 0, 0, .25); }
+dialog.pick[open] { display: flex; flex-direction: column; }
+dialog.pick::backdrop { background: rgba(20, 24, 22, .45); }
+.pick-head { padding: 20px 26px 12px; border-bottom: 1px solid var(--line); }
+.pick-head h2 { margin: 0; font-size: 1.25rem; display: flex; justify-content: space-between; align-items: center; }
+.pick-head h2 button.link { color: var(--muted); font-size: 1.1rem; padding: 2px 6px; }
+.pick-head p { margin: 4px 0 8px; color: var(--muted); font-size: .9rem; }
+.pick-tools { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; font-size: .88rem; color: var(--muted); }
+.pick-tools button.link { padding: 2px 0; font-weight: 600; }
+.pick-body { overflow-y: auto; padding: 4px 26px 18px; overscroll-behavior: contain; }
+.pick-level + .pick-level { margin-top: 6px; }
+.pick-lv { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 0 6px; border-bottom: 1.5px solid var(--rule); margin-bottom: 4px; }
+.pick-lv strong { font-size: 1rem; }
+.pick-lv label { font-size: .85rem; color: var(--muted); white-space: nowrap; display: flex; gap: 6px; align-items: center; cursor: pointer; }
+.pick-cols { column-count: 2; column-gap: 28px; }
+.pick-group { break-inside: avoid; padding-top: 8px; }
+.pick-group h3 { margin: 0 0 2px; font-size: .78rem; font-weight: 600; color: var(--muted); }
+.pick-item { display: flex; gap: 10px; align-items: flex-start; padding: 5px 0; cursor: pointer; line-height: 1.35; font-size: .95rem; }
+.pick input[type=checkbox] { accent-color: var(--accent); width: 17px; height: 17px; margin: 1px 0 0; flex: none; }
+.pick-foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 26px; border-top: 1px solid var(--line); background: var(--card); }
+.pick-foot .count { color: var(--muted); font-size: .9rem; }
+.pick-foot .btns { display: flex; gap: 8px; }
+@media (max-width: 700px) { .pick-cols { column-count: 1; } }
+@media (max-width: 560px) {
+  dialog.pick { width: 100%; max-width: 100%; height: 100%; height: 100dvh; max-height: 100%; max-height: 100dvh; margin: 0; border: none; border-top: 3px solid var(--accent); }
+  .pick-head { padding: 16px 16px 10px; }
+  .pick-body { padding: 0 16px 16px; }
+  .pick-item { padding: 11px 0; border-bottom: 1px solid var(--line); font-size: 1rem; } /* rows of at least 44 px for touch */
+  .pick input[type=checkbox] { width: 20px; height: 20px; }
+  .pick-foot { padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); }
+  .pick-foot .count { display: none; }
+  .pick-foot .btns { flex: 1; }
+  .pick-foot .btns button { flex: 1; }
+}
 </style>
 </head>
 <body>
@@ -290,7 +330,7 @@ footer { border-top: 3px solid var(--accent); padding-top: 14px; margin-top: 40p
   <div class="card">
     <div class="toolbar">
       <div class="field"><label for="level">Topics up to</label><select id="level"></select></div>
-      <div class="field"><label for="topic">Topic</label><select id="topic"></select></div>
+      <div class="field"><div class="field-head"><label for="topic">Topic</label><button class="link" id="pick-edit" hidden>Edit selection</button></div><select id="topic"></select></div>
       <button class="primary" id="btn-new">New task</button>
       <button id="btn-exam">Start skill check</button>
       <span class="stats" id="stats"></span>
@@ -381,8 +421,18 @@ footer { border-top: 3px solid var(--accent); padding-top: 14px; margin-top: 40p
     </div>
   </details>
 
-  <footer data-nosnippet><p>All tasks are generated randomly; companies and amounts are fictitious. Nothing you enter is sent anywhere. If you turn on “Save my progress”, your progress is stored in this browser only. Anonymous visitor counts are collected without cookies (GoatCounter).</p><p>Ledger Lab is a practice aid. Despite careful checking, errors cannot be ruled out. In case of doubt, the lecture materials apply. If you believe you have found an error in a task, please e-mail Till Muenster at <a id="mail-link" href="mailto:till.muenster@uni-mannheim.de?subject=Ledger%20Lab%20v1.5%3A%20possible%20error">till.muenster@uni-mannheim.de</a> and describe the problem.</p><p class="copy">Ledger Lab v1.5 • © <span id="copy-year">2026</span> Till Muenster • All rights reserved</p><p class="legal"><a href="https://www.tillmuenster.com/impressum">Impressum / Legal Notice</a> • <a href="https://www.tillmuenster.com/data-privacy">Datenschutz / Privacy</a></p></footer>
+  <footer data-nosnippet><p>All tasks are generated randomly; companies and amounts are fictitious. Nothing you enter is sent anywhere. If you turn on “Save my progress”, your progress is stored in this browser only. Anonymous visitor counts are collected without cookies (GoatCounter).</p><p>Ledger Lab is a practice aid. Despite careful checking, errors cannot be ruled out. In case of doubt, the lecture materials apply. If you believe you have found an error in a task, please e-mail Till Muenster at <a id="mail-link" href="mailto:till.muenster@uni-mannheim.de?subject=Ledger%20Lab%20v1.6%3A%20possible%20error">till.muenster@uni-mannheim.de</a> and describe the problem.</p><p class="copy">Ledger Lab v1.6 • © <span id="copy-year">2026</span> Till Muenster • All rights reserved</p><p class="legal"><a href="https://www.tillmuenster.com/impressum">Impressum / Legal Notice</a> • <a href="https://www.tillmuenster.com/data-privacy">Datenschutz / Privacy</a></p></footer>
 </div>
+
+<dialog class="pick" id="pick" aria-labelledby="pick-title">
+  <div class="pick-head">
+    <h2><span id="pick-title">Choose topics</span><button class="link" id="pick-x" aria-label="Close">✕</button></h2>
+    <p id="pick-sub"></p>
+    <div class="pick-tools"><button class="link" id="pick-weak">Tick my weaknesses</button><span id="pick-dot" aria-hidden="true">•</span><button class="link" id="pick-none">Clear all</button></div>
+  </div>
+  <div class="pick-body" id="pick-body"></div>
+  <div class="pick-foot"><span class="count" id="pick-count"></span><div class="btns"><button id="pick-cancel">Cancel</button><button class="primary" id="pick-ok"></button></div></div>
+</dialog>
 
 <script>
 /* =====================================================================
@@ -1560,7 +1610,7 @@ function buildHint(task) {
    A code stores the code version, the task type, the firm and the seed. CODE_VERSION must be increased
    whenever a change to the task types, firms or generators would make an old code produce a different task.
    ===================================================================== */
-const APP_VERSION = '1.5';
+const APP_VERSION = '1.6';
 const CODE_VERSION = 1;
 const B32 = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';   // Crockford base 32 (no I, L, O, U)
 const toB32 = (n, len) => { let s = ''; for (let i = 0; i < len; i++) { s = B32[Number(n % 32n)] + s; n /= 32n; } return s; };
@@ -1653,9 +1703,13 @@ function decodeExam(code) {
   const sel = $('topic'), lvlSel = $('level');
   for (const L of LEVELS) { const o = document.createElement('option'); o.value = L.n; o.textContent = L.name; lvlSel.appendChild(o); }
   const curLevel = () => Number(lvlSel.value);
+  let picked = [], topicNow = 'all';   // topics chosen in the picker (ids); the topic choice of the current task
+  const nTopics = n => n === 1 ? '1 topic' : `${n} topics`;
   function buildTopics() {
     const lv = curLevel();
-    sel.innerHTML = `<option value="all">All topics up to Level ${lv} (mixed)</option>` + (lv > 1 ? `<option value="only">Level ${lv} topics only (mixed)</option>` : '');
+    picked = picked.filter(id => TYPES.find(t => t.id === id).level <= lv);   // the selection only keeps topics up to the current level
+    sel.innerHTML = `<option value="all">All topics up to Level ${lv} (mixed)</option>` + (lv > 1 ? `<option value="only">Level ${lv} topics only (mixed)</option>` : '') +
+      `<option value="pick">${picked.length ? `My selection (${nTopics(picked.length)})` : 'Choose topics…'}</option>`;
     for (let L = 1; L <= lv; L++) {
       const groups = [...new Set(TYPES.filter(t => t.level === L).map(t => t.group))];
       for (const g of groups) {
@@ -1669,6 +1723,46 @@ function decodeExam(code) {
   }
   function setWeak(on) { weak = on; $('weak-mode').checked = on; buildTopics(); }
   buildTopics();
+
+  // topic picker: "Choose topics…" opens a checklist of the topics up to the current level; tasks are then drawn evenly from them
+  const dlg = $('pick');
+  function openPick() {
+    const lv = curLevel(), body = $('pick-body');
+    $('pick-sub').textContent = `Tasks are drawn evenly from the topics you tick. Topics up to Level ${lv}.`;
+    body.innerHTML = '';
+    for (let L = 1; L <= lv; L++) {
+      const box = document.createElement('div'); box.className = 'pick-level'; box.setAttribute('role', 'group'); box.setAttribute('aria-label', LEVELS[L - 1].name);
+      box.innerHTML = `<div class="pick-lv"><strong>${LEVELS[L - 1].name}</strong><label><input type="checkbox" class="lv-all" aria-label="Select all Level ${L} topics"> Select all</label></div><div class="pick-cols"></div>`;
+      const cols = box.querySelector('.pick-cols');
+      for (const g of [...new Set(TYPES.filter(t => t.level === L).map(t => t.group))]) {
+        const d = document.createElement('div'); d.className = 'pick-group'; d.innerHTML = `<h3>${g}</h3>`;
+        for (const t of TYPES.filter(t => t.level === L && t.group === g))
+          d.insertAdjacentHTML('beforeend', `<label class="pick-item"><input type="checkbox" value="${t.id}"${picked.includes(t.id) ? ' checked' : ''}><span>${t.label}</span></label>`);
+        cols.appendChild(d);
+      }
+      box.querySelector('.lv-all').onchange = e => { box.querySelectorAll('.pick-cols input').forEach(i => { i.checked = e.target.checked; }); syncPick(); };
+      body.appendChild(box);
+    }
+    $('pick-weak').hidden = $('pick-dot').hidden = !weakPool().length;   // only offered when there are weak topics
+    syncPick(); dlg.showModal(); body.scrollTop = 0;
+  }
+  function syncPick() {
+    dlg.querySelectorAll('.pick-level').forEach(box => { const b = [...box.querySelectorAll('.pick-cols input')], n = b.filter(i => i.checked).length, a = box.querySelector('.lv-all');
+      a.checked = n === b.length; a.indeterminate = n > 0 && n < b.length; });
+    const n = dlg.querySelectorAll('.pick-cols input:checked').length;
+    $('pick-count').textContent = `${nTopics(n)} selected`;
+    $('pick-ok').textContent = `Practice ${nTopics(n)}`; $('pick-ok').disabled = !n;
+  }
+  $('pick-body').onchange = e => { if (!e.target.classList.contains('lv-all')) syncPick(); };
+  $('pick-none').onclick = () => { dlg.querySelectorAll('input').forEach(i => { i.checked = false; }); syncPick(); };
+  $('pick-weak').onclick = () => { const w = weakPool().map(([t]) => t.id); dlg.querySelectorAll('.pick-cols input').forEach(i => { i.checked = w.includes(i.value); }); syncPick(); };
+  $('pick-ok').onclick = () => {
+    picked = [...dlg.querySelectorAll('.pick-cols input:checked')].map(i => i.value); dlg.close();
+    if (weak) setWeak(false); buildTopics(); sel.value = 'pick'; newTask();
+  };
+  $('pick-cancel').onclick = $('pick-x').onclick = () => { dlg.close(); sel.value = topicNow; };
+  dlg.addEventListener('close', () => { sel.value = topicNow; });   // Cancel, ✕ and Esc keep the previous topic choice (after OK, topicNow is already 'pick')
+  $('pick-edit').onclick = openPick;
 
   function accountSelect() {
     const s = document.createElement('select');
@@ -1784,7 +1878,8 @@ function decodeExam(code) {
         const w = ts.map(t => (L === 1 && (t.id === 'closing' || t.id === 'noentry')) ? 1 : 3), sum = w.reduce((a, b) => a + b, 0);
         ts.forEach((t, i) => weighted.push([t, w[i] / sum]));
       }
-    } else type = TYPES.find(t => t.id === choice);
+    } else if (choice === 'pick') weighted = picked.map(id => [TYPES.find(t => t.id === id), 1]);   // chosen topics: equal weights
+    else type = TYPES.find(t => t.id === choice);
     if (!type) {
       const total = weighted.reduce((a, [, w]) => a + w, 0);
       do {
@@ -1797,6 +1892,7 @@ function decodeExam(code) {
   function showTask({ type, task }) {
     $('exam-review').hidden = true; $('task-card').hidden = false; resetNoEntryButton();
     state.type = type; state.task = task;
+    topicNow = sel.value; $('pick-edit').hidden = sel.value !== 'pick';   // "Edit selection" only while practising the selection
     state.attempts = 0; state.solved = false; state.revealed = false;
     state.counted = false; updateStats();
     $('notice').hidden = true;
@@ -1849,7 +1945,9 @@ function decodeExam(code) {
   $('btn-hint').onclick = () => { if (!state.solved && !state.revealed) showFeedback('info', buildHint(state.task), 'Hint'); };
   $('btn-noentry').onclick = () => exam ? toggleNoEntry() : check(true);
   $('btn-solution').onclick = () => { if (!state.solved) { state.revealed = true; countTask(); setButtons(false); } renderSolution(); };
-  sel.onchange = () => { if (weak && sel.value !== 'weak') { const v = sel.value; setWeak(false); sel.value = v; } newTask(); };
+  sel.onchange = () => {
+    if (sel.value === 'pick') { openPick(); return; }   // "Choose topics…" / "My selection (N topics)" opens the picker (Cancel keeps the previous topic)
+    if (weak && sel.value !== 'weak') { const v = sel.value; setWeak(false); sel.value = v; } newTask(); };
   $('weak-mode').onchange = e => { setWeak(e.target.checked); newTask(); };
   $('save-progress').onchange = e => {
     storeError = false;
@@ -1868,12 +1966,19 @@ function decodeExam(code) {
     session = emptyStats(); if (saving && !store.write(emptyStats())) { saving = false; storeError = true; }
     updateStats();
   };
-  lvlSel.onchange = () => { const only = sel.value === 'only'; buildTopics(); if (only && curLevel() > 1) sel.value = 'only'; newTask(); };   // "Level N topics only" stays selected when the level changes
+  lvlSel.onchange = () => {   // "Level N topics only" and "My selection" stay selected when the level changes
+    const was = sel.value; buildTopics();
+    if (was === 'only' && curLevel() > 1) sel.value = 'only';
+    if (was === 'pick' && picked.length) sel.value = 'pick';
+    newTask();
+    if (was === 'pick' && !picked.length) showNotice(`None of your chosen topics is up to Level ${curLevel()}. Back to mixed practice.`);
+  };
   /* ---------- skill check (called "exam" in the code): 15 tasks, no hints or solutions until the end, answers can be changed until then ---------- */
   const fmtTime = ms => { const t = Math.floor(ms / 1000), h = Math.floor(t / 3600), m = Math.floor(t / 60) % 60, p2 = n => String(n).padStart(2, '0');
     return (h ? h + ':' + p2(m) : p2(m)) + ':' + p2(t % 60); };
   function practiceControls(on) {
     [lvlSel, sel, $('btn-new'), $('btn-exam'), $('weak-mode')].forEach(el => { el.disabled = !on; });
+    $('pick-edit').hidden = !on || sel.value !== 'pick';
     ['btn-check', 'btn-hint', 'btn-solution'].forEach(id => { $(id).hidden = !on; });
   }
   function resetNoEntryButton() { const b = $('btn-noentry'); b.classList.remove('pressed'); b.removeAttribute('aria-pressed'); b.textContent = 'No entry required'; }
